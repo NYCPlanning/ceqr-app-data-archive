@@ -2,7 +2,7 @@
 
 ## Instructions: 
 1. install dependencies `pip3 install -r requirements.txt`
-2. build and publish table `python3 build.py`
+2. build and publish table `python3 build.py` and `python3 mode_split.py`
 
 ## Data info: 
 * input:
