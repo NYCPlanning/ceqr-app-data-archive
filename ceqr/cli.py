@@ -16,4 +16,3 @@ def cli():
 def run_recipes(recipe):
     click.secho(f'\nrunning {recipe} ...\n', fg='red')
     os.system(f'bash {Path(__file__).parent}/recipes/{recipe}/runner.sh')
-    click.secho(f'\n{recipe} ...\n', fg='red')

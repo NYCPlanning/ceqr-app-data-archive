@@ -1,11 +1,11 @@
+from ceqr.helper.engines import recipe_engine, edm_engine
+from ceqr.helper.config_loader import load_config
+from ceqr.helper.exporter import exporter
 import datetime
 import pandas as pd
 from pathlib import Path
-from sqlalchemy import create_engine
 import numpy as np
 import re
-import os
-import json
 
 def guess_org_level(name):
     '''
@@ -65,17 +65,20 @@ def estimate_pct_hs(org_level):
 
 def get_date(d): 
     try:
-        d = datetime.datetime.strptime(d,'%b-%y').strftime('%Y-%m-%d %H:%M:%S+00')
+        d = datetime.datetime.strptime(d,'%b-%y')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
         return str(d)
     except:
         pass
     try:
-        d = datetime.datetime.strptime(d,'%y-%b').strftime('%Y-%m-%d %H:%M:%S+00')
+        d = datetime.datetime.strptime(d,'%y-%b')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
         return str(d)
     except:
         pass
     try:
-        d = datetime.datetime.strptime(d,'%Y-%m-%d %H:%M:%S0').strftime('%Y-%m-%d %H:%M:%S+00')
+        d = datetime.datetime.strptime(d,'%Y-%m-%d %H:%M:%S0')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
         return str(d)
     except:
         return ''
@@ -97,24 +100,21 @@ def get_fund_number(s):
   
 
 if __name__ == "__main__":
-    # Establish connections
-    recipe_engine = create_engine(os.getenv('RECIPE_ENGINE'))
-    edm_engine = create_engine(os.getenv('EDM_DATA'))
-
-    # Load configuration
-    config = json.loads(open(Path(__file__).parent/'config.json').read())
+    # Load configuration (note: please use relative paths)
+    config = load_config(Path(__file__).parent/'config.json')
     input_table = config['inputs'][0] # --> in this case there is only one
     output_table = config['outputs'][0] # --> in this case there is only one
-    output_table_schema = output_table.split('.')[0]
-    output_table_version = output_table.split('.')[1]
     DDL = config['DDL']
 
     # import data
     df = pd.read_sql(f'select * from {input_table}', con=recipe_engine)
-    df = df[df.type.isin(['Capacity Projects', '3K Capacity Projects', 'PreK Capacity Projects'])]
-    df = df.rename(columns={'projectid': 'project_dsf', 'schoolname' : 'name', 'geom' : 'geometry'})
 
     # perform column transformation
+    df = df[df.type.isin(['Capacity Projects', '3K Capacity Projects', 'PreK Capacity Projects'])]
+    df = df.rename(columns={'projectid': 'project_dsf', 
+                            'schoolname' : 'name', 
+                            'geom' : 'geometry'})
+
     df['org_level'] = df['name'].apply(guess_org_level)
     df['capacity'] = df['forecastcapacity'].apply(get_capacity_number)
     df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
@@ -126,17 +126,13 @@ if __name__ == "__main__":
     df['total_est_cost'] = df['totalestcost'].apply(get_cost_number)
     df['funding_current_budget'] = df['fundingreqd'].apply(get_fund_number)
     df['funding_previous'] = df['previousappropriations'].apply(get_fund_number)
-    df['pct_funded'] = df.apply(lambda row: (row['funding_previous']+row['funding_current_budget'])/row['total_est_cost'], axis=1)  
+    df['pct_funded'] = df.apply(lambda row: (row['funding_previous']\
+                                +row['funding_current_budget'])\
+                                    /row['total_est_cost'], axis=1)  
 
-    # publish to EDM_DATA
-    edm_engine.connect().execute(f'CREATE SCHEMA IF NOT EXISTS {output_table_schema}')
-    df[DDL.keys()].to_sql(output_table_version, 
-                            con = edm_engine, 
-                            schema=output_table_schema, 
-                            if_exists='replace', 
-                            index=False)
-    edm_engine.connect().execute(f'UPDATE {output_table} SET geometry=ST_SetSRID(ST_AsText(geometry),4326)')
-
-    # Change to target DDL
-    for key, value in DDL.items():
-        edm_engine.connect().execute(f'ALTER TABLE {output_table} ALTER COLUMN {key} TYPE {value};')
+    # export table to EDM_DATA
+    exporter(df=df, 
+            output_table=output_table, 
+            con=edm_engine, 
+            DDL=DDL, 
+            sql=f'UPDATE {output_table} SET geometry=ST_SetSRID(ST_AsText(geometry),4326)')
