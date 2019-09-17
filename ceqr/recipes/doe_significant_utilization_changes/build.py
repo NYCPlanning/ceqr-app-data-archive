@@ -1,5 +1,7 @@
+from ceqr.helper.engines import recipe_engine, edm_engine
+from ceqr.helper.config_loader import load_config
+from ceqr.helper.exporter import exporter
 from pathlib import Path
-from sqlalchemy import create_engine
 import os
 import datetime
 import pandas as pd
@@ -58,35 +60,19 @@ def doe_util(df):
     df['join_key'] = df.apply(lambda row: f"{row['school_year']} {row['date_tmp']}", axis=1)
     return df
 
-if __name__ == "__main__":    
-    recipe_engine = create_engine(os.getenv('RECIPE_ENGINE'))
-    edm_engine = create_engine(os.getenv('EDM_DATA'))
-
+if __name__ == "__main__":
     # Load configuration
-    config = json.loads(open(Path(__file__).parent/'config.json').read())
+    config = load_config(Path(__file__).parent/'config.json')
     input_table = config['inputs'][0] # --> in this case there is only one
     output_table = config['outputs'][0] # --> in this case there is only one
-    output_table_schema = output_table.split('.')[0]
-    output_table_version = output_table.split('.')[1]
     DDL = config['DDL']
 
-    # import data
+    # ETL
     df_util = doe_util(pd.read_sql(f'select * from {input_table}', con=recipe_engine))
-
     df_url = pd.read_csv('output/sharepoint_urls.csv', dtype=str, index_col=False)
     df_url.fillna('', inplace=True)
     df_url['join_key'] = df_url.apply(lambda row: f"{str(row['school_year'])} {str(row['date'])}", axis=1)
-
     df = pd.merge(df_util, df_url, how='outer', left_on='join_key', right_on='join_key')
 
-     # publish to EDM_DATA
-    edm_engine.connect().execute(f'CREATE SCHEMA IF NOT EXISTS {output_table_schema}')
-    df[DDL.keys()].to_sql(output_table_version,
-                            con = edm_engine,
-                            schema=output_table_schema,
-                            if_exists='replace',
-                            index=False)
-                            
-    # Change to target DDL
-    for key, value in DDL.items():
-        edm_engine.connect().execute(f'ALTER TABLE {output_table} ALTER COLUMN {key} TYPE {value};')
+    # export table to EDM_DATA
+    exporter(df, output_table, DDL)
