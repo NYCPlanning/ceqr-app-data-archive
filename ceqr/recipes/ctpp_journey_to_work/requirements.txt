@@ -1,2 +1,4 @@
 pandas
 geopandas
+sqlalchemy
+psycopg2

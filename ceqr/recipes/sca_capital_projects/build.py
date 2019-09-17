@@ -130,6 +130,7 @@ if __name__ == "__main__":
 
     # publish to EDM_DATA
     edm_engine.connect().execute(f'CREATE SCHEMA IF NOT EXISTS {output_table_schema}')
+    edm_engine.connect().execute(f'DROP TABLE IF EXISTS {output_table}')
     df[DDL.keys()].to_sql(output_table_version, 
                             con = edm_engine, 
                             schema=output_table_schema, 

@@ -1,7 +1,10 @@
-import pandas as pd
-import geopandas as gpd
-import os
 from sqlalchemy import create_engine
+from pathlib import Path
+import geopandas as gpd
+import pandas as pd
+import os
+import time
+import json
 
 ############################################################
 ######Part 1: generate the ctpp journy-to-work table #######
@@ -36,11 +39,24 @@ def get_mode(i):
     return MODE.get(i,'')
 
 if __name__ == "__main__": 
+    beg_ts = time.time()
+    
     recipe_engine = create_engine(os.getenv('RECIPE_ENGINE'))
     edm_engine = create_engine(os.getenv('EDM_DATA'))
 
+    config = json.loads(open(Path(__file__).parent/'config.json').read())
+    input_table = config['inputs'][0]
+    output_table1 = config['outputs'][0]
+    output_table2 = config['outputs'][1]
+    output_table_schema1 = output_table1.split('.')[0]
+    output_table_schema2 = output_table2.split('.')[0]
+    output_table_version1 = output_table1.split('.')[1]
+    output_table_version2 = output_table2.split('.')[1]
+    DDL1 = config['DDL'][output_table1]
+    DDL2 = config['DDL'][output_table2]
+
     # load the raw dataset
-    df = pd.read_sql('select res_tract, work_tract, mode, "totwork_16+", standard_error, workplace_state_county from ctpp_journey_to_work."2019/09/16"', con=recipe_engine)
+    df = pd.read_sql(f'select res_tract, work_tract, mode, "totwork_16+", standard_error, workplace_state_county from {input_table}', con=recipe_engine)
 
     # rename column names
     df.rename(index=str, columns={'res_tract': 'residential_geoid', 
@@ -61,11 +77,12 @@ if __name__ == "__main__":
     # map the mode field to its detailed definition
     df['MODE'] = df.MODE.apply(lambda x: get_mode(x))
 
+    # turn count and standard_error field into integer and float
+    df['count']= df['count'].astype('int')
+    df['standard_error']= df['standard_error'].astype('float')
+
     # keep the five columns included in the schema
     df = df[['residential_geoid', 'work_geoid', 'MODE', 'count', 'standard_error']]
-
-    generate the journey to work table
-    df.to_csv('output/ctpp_table_2006_2010.csv')
 
     ############################################################
     ############ Part 2: generate the lookup table #############
@@ -86,7 +103,7 @@ if __name__ == "__main__":
     ct_shp.rename(columns={'GEOID':'geoid'}, inplace=True)
 
     # find out the unique census tracts between residential_geoid and work_geoid
-    geoid_list = pd.concat([df_.residential_geoid, df_.work_geoid]).unique().astype('str')
+    geoid_list = pd.concat([df.residential_geoid, df.work_geoid]).unique().astype('str')
 
     # turn the unique census tract list into a dataframe
     geoid_df = pd.DataFrame({'geoid':geoid_list})
@@ -100,30 +117,22 @@ if __name__ == "__main__":
     ################## Part 3: dump to postgis #################
     ############################################################
 
-    DDL1 = dict(residential_geoid='character varying',
-            work_geoid='character varying',
-            MODE='character varying',
-            count='integer',
-            standard_error='double precision')
-
     print('dumping to postgis')
     # publish to EDM_DATA
-    edm_engine.connect().execute('CREATE SCHEMA IF NOT EXISTS ctpp_journey_to_work')
-    df[DDL1.keys()].to_sql('2006_2010', con = edm_engine, schema='ctpp_journey_to_work', if_exists='replace', index=False)    
+    edm_engine.connect().execute('CREATE SCHEMA IF NOT EXISTS ctpp_censustract_variables')
+    df[DDL1.keys()].to_sql(output_table_version1, con = edm_engine, schema=output_table_schema1, if_exists='replace', index=False, chunksize=10000)
+    
+    edm_engine.connect().execute(f'DROP TABLE IF EXISTS {output_table_schema2}."{output_table_version2}"')
+    df_geo[DDL2.keys()].to_sql(output_table_version2, con = edm_engine, schema=output_table_schema2, if_exists='replace', index=False, chunksize=10000)
+    edm_engine.connect().execute(f'UPDATE {output_table_schema2}."{output_table_version2}" SET centroid=ST_SetSRID(centroid,4326)')
 
     # Change to target DDL
     for key, value in DDL1.items():
-        edm_engine.connect().execute(f'ALTER TABLE ctpp_journey_to_work."2006_2010" ALTER COLUMN {key} TYPE {value};')
-
-    DDL2 = dict(geoid='character varying',
-        centroid='geometry(Point,4326)')
-
-    print('dumping to postgis')
-    # publish to EDM_DATA
-    edm_engine.connect().execute('CREATE SCHEMA IF NOT EXISTS ctpp_censustract_lookup')
-    df_geo[DDL2.keys()].to_sql('2006_2010', con = edm_engine, schema='ctpp_censustract_lookup', if_exists='replace', index=False)
-    edm_engine.connect().execute('UPDATE ctpp_censustract_lookup."2006_2010" SET centroid=ST_SetSRID(centroid,4326)')
+        edm_engine.connect().execute(f'ALTER TABLE {output_table_schema1}."{output_table_version1}" ALTER COLUMN "{key}" TYPE {value};')
 
     # Change to target DDL
     for key, value in DDL2.items():
-        edm_engine.connect().execute(f'ALTER TABLE ctpp_censustract_lookup."2006_2010" ALTER COLUMN {key} TYPE {value};')
+        edm_engine.connect().execute(f'ALTER TABLE {output_table_schema2}."{output_table_version2}" ALTER COLUMN {key} TYPE {value};')
+
+    end_ts = time.time()
+    print(f'processing time: {(end_ts - beg_ts)/60:.3f} minutes')

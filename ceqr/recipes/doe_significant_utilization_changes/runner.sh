@@ -4,5 +4,5 @@ pip3 install -r requirements.txt
 # run web scraping script
 python3 scraper.py
 
-# run web build script
+# run build script
 python3 build.py

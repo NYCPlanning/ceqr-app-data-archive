@@ -1,8 +1,11 @@
+from sqlalchemy import create_engine
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import math
 import os
-from sqlalchemy import create_engine
+import time
+import json
 
 def get_county(c):
     '''
@@ -137,11 +140,23 @@ def etl(data):
     return data
 
 if __name__ == "__main__":
+    beg_ts = time.time()
+    
     recipe_engine = create_engine(os.getenv('RECIPE_ENGINE'))
     edm_engine = create_engine(os.getenv('EDM_DATA'))
 
-    df_2006_2010 = pd.read_sql('select geoid, lineno, est, se from ctpp_mode_splits."NY_2006thru2010"', con=recipe_engine)
-    df_2012_2016 = pd.read_sql('select geoid, lineno, est, moe from ctpp_mode_splits."NY_2012thru2016"', con=recipe_engine)
+    config = json.loads(open(Path(__file__).parent/'config.json').read())
+    input_table1 = config['inputs'][1]
+    input_table2 = config['inputs'][2]
+    output_table1 = config['outputs'][2]
+    output_table2 = config['outputs'][3]
+    output_table_schema = output_table1.split('.')[0]
+    output_table_version1 = output_table1.split('.')[1]
+    output_table_version2 = output_table2.split('.')[1]
+    DDL = config['DDL'][output_table1]
+
+    df_2006_2010 = pd.read_sql(f'select geoid, lineno, est, se from {input_table1}', con=recipe_engine)
+    df_2012_2016 = pd.read_sql(f'select geoid, lineno, est, moe from {input_table2}', con=recipe_engine)
 
     # rename column names
     column_names = ['geoid', 'variable', 'value', 'moe']
@@ -156,18 +171,15 @@ if __name__ == "__main__":
     df_2006_2010 = etl(df_2006_2010)
     df_2012_2016 = etl(df_2012_2016)
 
-    DDL = dict(geoid='character varying',
-        value='integer',
-        moe='integer',
-        variable='character varying')
-
     print('dumping to postgis')
     # publish to EDM_DATA
     edm_engine.connect().execute('CREATE SCHEMA IF NOT EXISTS ctpp_censustract_variables')
-    df_2006_2010[DDL.keys()].to_sql('2006_2010', con = edm_engine, schema='ctpp_censustract_variables', if_exists='replace', index=False)
-    df_2012_2016[DDL.keys()].to_sql('2012_2016', con = edm_engine, schema='ctpp_censustract_variables', if_exists='replace', index=False)
+    df_2006_2010[DDL.keys()].to_sql(output_table_version1, con = edm_engine, schema=output_table_schema, if_exists='replace', index=False, chunksize=10000)
+    df_2012_2016[DDL.keys()].to_sql(output_table_version2, con = edm_engine, schema=output_table_schema, if_exists='replace', index=False, chunksize=10000)
 
     # Change to target DDL
     for key, value in DDL.items():
-        edm_engine.connect().execute(f'ALTER TABLE ctpp_censustract_variables."2006_2010" ALTER COLUMN {key} TYPE {value};')
-        edm_engine.connect().execute(f'ALTER TABLE ctpp_censustract_variables."2012_2016" ALTER COLUMN {key} TYPE {value};')
+        edm_engine.connect().execute(f'ALTER TABLE {output_table_schema}."{output_table_version1}" ALTER COLUMN {key} TYPE {value};')
+        edm_engine.connect().execute(f'ALTER TABLE {output_table_schema}."{output_table_version2}" ALTER COLUMN {key} TYPE {value};')
+    end_ts = time.time()
+    print(f'processing time: {(end_ts - beg_ts):.3f} seconds')
