@@ -3,16 +3,18 @@
         "doe_all_proposals.\"2019/07/16\""
         ],
     "outputs": [
-        "doe_significant_utilization_changes.\"072019\""
-        ],
-    "DDL": {
-        "bldg_id": "character varying",
-        "org_id": "character varying",
-        "bldg_id_additional": "character varying",
-        "title": "character varying",
-        "at_scale_year": "character varying",
-        "url": "character varying",
-        "at_scale_enroll": "integer",
-        "vote_date": "character varying"
-    }
+        {
+            "output_table" : "doe_significant_utilization_changes.\"072019\"",
+            "DDL": {
+                "bldg_id": "character varying",
+                "org_id": "character varying",
+                "bldg_id_additional": "character varying",
+                "title": "character varying",
+                "at_scale_year": "character varying",
+                "url": "character varying",
+                "at_scale_enroll": "integer",
+                "vote_date": "character varying"
+            }
+        }
+    ]
 }
