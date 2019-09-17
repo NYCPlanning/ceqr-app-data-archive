@@ -5,30 +5,30 @@
         "ctpp_mode_splits.\"NY_2012thru2016\""
         ],
     "outputs": [
-        "ctpp_journey_to_work.2006_2010",
-        "ctpp_censustract_lookup.2006_2010",
-        "ctpp_censustract_variables.2006_2010",
-        "ctpp_censustract_variables.2012_2016"
+        "ctpp_journey_to_work.\"2006_2010\"",
+        "ctpp_censustract_lookup.\"2006_2010\"",
+        "ctpp_censustract_variables.\"2006_2010\"",
+        "ctpp_censustract_variables.\"2012_2016\""
         ],
     "DDL": {
-        "ctpp_journey_to_work.2006_2010": {
+        "ctpp_journey_to_work.\"2006_2010\"": {
             "residential_geoid": "character varying",
             "work_geoid": "character varying",
             "MODE": "character varying",
             "count": "integer",
             "standard_error": "double precision"
         },
-        "ctpp_censustract_lookup.2006_2010": {
+        "ctpp_censustract_lookup.\"2006_2010\"": {
             "geoid": "character varying",
             "centroid": "geometry(Point,4326)"
         },
-        "ctpp_censustract_variables.2006_2010": {
+        "ctpp_censustract_variables.\"2006_2010\"": {
             "geoid": "character varying",
             "value": "integer",
             "moe": "integer",
             "variable": "character varying"
         },
-        "ctpp_censustract_variables.2012_2016": {
+        "ctpp_censustract_variables.\"2012_2016\"": {
             "geoid": "character varying",
             "value": "integer",
             "moe": "integer",

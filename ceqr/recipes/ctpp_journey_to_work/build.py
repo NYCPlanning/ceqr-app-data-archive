@@ -50,8 +50,8 @@ if __name__ == "__main__":
     output_table2 = config['outputs'][1]
     output_table_schema1 = output_table1.split('.')[0]
     output_table_schema2 = output_table2.split('.')[0]
-    output_table_version1 = output_table1.split('.')[1]
-    output_table_version2 = output_table2.split('.')[1]
+    output_table_version1 = output_table1.split('.')[1].strip('\"')
+    output_table_version2 = output_table2.split('.')[1].strip('\"')
     DDL1 = config['DDL'][output_table1]
     DDL2 = config['DDL'][output_table2]
 
@@ -119,20 +119,21 @@ if __name__ == "__main__":
 
     print('dumping to postgis')
     # publish to EDM_DATA
-    edm_engine.connect().execute('CREATE SCHEMA IF NOT EXISTS ctpp_censustract_variables')
+    edm_engine.connect().execute(f'CREATE SCHEMA IF NOT EXISTS {output_table_schema1}')
     df[DDL1.keys()].to_sql(output_table_version1, con = edm_engine, schema=output_table_schema1, if_exists='replace', index=False, chunksize=10000)
     
-    edm_engine.connect().execute(f'DROP TABLE IF EXISTS {output_table_schema2}."{output_table_version2}"')
+    edm_engine.connect().execute(f'CREATE SCHEMA IF NOT EXISTS {output_table_schema2}')
+    edm_engine.connect().execute(f'DROP TABLE IF EXISTS {output_table2}')
     df_geo[DDL2.keys()].to_sql(output_table_version2, con = edm_engine, schema=output_table_schema2, if_exists='replace', index=False, chunksize=10000)
-    edm_engine.connect().execute(f'UPDATE {output_table_schema2}."{output_table_version2}" SET centroid=ST_SetSRID(centroid,4326)')
+    edm_engine.connect().execute(f'UPDATE {output_table2} SET centroid=ST_SetSRID(centroid,4326)')
 
     # Change to target DDL
     for key, value in DDL1.items():
-        edm_engine.connect().execute(f'ALTER TABLE {output_table_schema1}."{output_table_version1}" ALTER COLUMN "{key}" TYPE {value};')
+        edm_engine.connect().execute(f'ALTER TABLE {output_table1} ALTER COLUMN "{key}" TYPE {value};')
 
     # Change to target DDL
     for key, value in DDL2.items():
-        edm_engine.connect().execute(f'ALTER TABLE {output_table_schema2}."{output_table_version2}" ALTER COLUMN {key} TYPE {value};')
+        edm_engine.connect().execute(f'ALTER TABLE {output_table2} ALTER COLUMN {key} TYPE {value};')
 
     end_ts = time.time()
     print(f'processing time: {(end_ts - beg_ts)/60:.3f} minutes')
