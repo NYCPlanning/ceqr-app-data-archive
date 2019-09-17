@@ -103,8 +103,8 @@ if __name__ == "__main__":
     # Load configuration (note: please use relative paths)
     config = load_config(Path(__file__).parent/'config.json')
     input_table = config['inputs'][0] # --> in this case there is only one
-    output_table = config['outputs'][0] # --> in this case there is only one
-    DDL = config['DDL']
+    output_table = config['outputs'][0]['output_table'] # --> in this case there is only one
+    DDL = config['outputs'][0]['DDL']
 
     # import data
     df = pd.read_sql(f'select * from {input_table}', con=recipe_engine)
@@ -131,7 +131,7 @@ if __name__ == "__main__":
                                     /row['total_est_cost'], axis=1)  
 
     # export table to EDM_DATA
-    exporter(df=df, 
+    exporter(df=df.loc[1:5, :], 
             output_table=output_table, 
             con=edm_engine, 
             DDL=DDL, 

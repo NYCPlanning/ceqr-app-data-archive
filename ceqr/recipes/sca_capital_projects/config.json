@@ -3,23 +3,25 @@
         "sca_capital_projects.\"2019/09/11\""
         ],
     "outputs": [
-        "sca_capital_projects.latest"
-        ],
-    "DDL": {
-        "project_dsf": "text",
-        "name": "text",
-        "org_level": "text",
-        "capacity": "bigint",
-        "pct_ps": "double precision",
-        "pct_is": "double precision",
-        "pct_hs": "double precision",
-        "guessed_pct": "boolean",
-        "start_date": "text",
-        "planned_end_date": "text",
-        "total_est_cost": "double precision",
-        "funding_current_budget": "double precision",
-        "funding_previous": "double precision",
-        "pct_funded": "double precision",
-        "geometry": "geometry(Point,4326)"
-    }
+        {
+            "output_table" : "sca_capital_projects.latest",
+            "DDL": {
+                "project_dsf": "text",
+                "name": "text",
+                "org_level": "text",
+                "capacity": "bigint",
+                "pct_ps": "double precision",
+                "pct_is": "double precision",
+                "pct_hs": "double precision",
+                "guessed_pct": "boolean",
+                "start_date": "text",
+                "planned_end_date": "text",
+                "total_est_cost": "double precision",
+                "funding_current_budget": "double precision",
+                "funding_previous": "double precision",
+                "pct_funded": "double precision",
+                "geometry": "geometry(Point,4326)"
+            }
+        }
+    ]
 }

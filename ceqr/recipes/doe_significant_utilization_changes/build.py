@@ -63,8 +63,8 @@ if __name__ == "__main__":
     # Load configuration
     config = load_config(Path(__file__).parent/'config.json')
     input_table = config['inputs'][0] # --> in this case there is only one
-    output_table = config['outputs'][0] # --> in this case there is only one
-    DDL = config['DDL']
+    output_table = config['outputs'][0]['output_table'] # --> in this case there is only one
+    DDL = config['outputs'][0]['DDL']
 
     # ETL
     df_util = doe_util(pd.read_sql(f'select * from {input_table}', con=recipe_engine))
