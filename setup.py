@@ -10,7 +10,8 @@ setup(
             'click',
             'psycopg2-binary',
             'sqlalchemy',
-            'pandas'],
+            'pandas',
+            'python-dotenv'],
         entry_points='''
         [console_scripts]
         ceqr=ceqr.cli:cli
