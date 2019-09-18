@@ -1,5 +1,6 @@
 from .engines import edm_engine
 from sqlalchemy.types import TEXT
+import os
 
 def exporter(df, output_table, DDL, con=edm_engine, sql='', chunksize=10000):
     # parse output table
@@ -9,7 +10,12 @@ def exporter(df, output_table, DDL, con=edm_engine, sql='', chunksize=10000):
     # check if schema exists
     con.connect().execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
     con.connect().execute(f'DROP TABLE IF EXISTS {output_table}')
-    df[DDL.keys()].to_sql(version, con = con, schema=schema,
+
+    columns = [i.strip('"') for i in DDL.keys()]
+
+    os.system(f'\necho "exporting table {output_table} ..."')
+
+    df[columns].to_sql(version, con = con, schema=schema,
                             if_exists='replace', index=False, 
                             chunksize=chunksize)
 

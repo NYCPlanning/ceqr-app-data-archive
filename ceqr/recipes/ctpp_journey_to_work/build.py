@@ -46,25 +46,23 @@ if __name__ == "__main__":
 
     # load the raw dataset
     df = pd.read_sql(f'''
-                    SELECT res_tract, work_tract, mode, "totwork_16+", standard_error, workplace_state_county 
+                    SELECT res_tract AS residential_geoid, 
+                            work_tract AS work_geoid, mode, 
+                            "totwork_16+" AS count, 
+                            standard_error, 
+                            workplace_state_county 
                     FROM {input_table}
                     ''', con=recipe_engine)
-
-    # rename column names
-    df.rename(index=str, 
-            columns={
-                    'res_tract': 'residential_geoid', 
-                    'work_tract': 'work_geoid',
-                    'mode': 'MODE',
-                    'totwork_16+': 'count',
-                    'standard_error': 'standard_error'
-                    },
-            inplace = True)
 
     # filter out records with workplaces outside the geo_list
     df = df[df['workplace_state_county'].isin(geo_list)]
 
     # map the mode field to its detailed definition
-    df['MODE'] = df.MODE.apply(lambda x: MODE.get(x, ''))
+    df['mode'] = df['mode'].apply(lambda x: MODE.get(x, ''))
+    df['count'] = df['count'].astype('int64')
+    df['standard_error'] = df['standard_error'].astype('double')
+    df['MODE'] = df['mode']
 
+    os.system('echo "exporting table ..."')
+    # export to EDM_DATA
     exporter(df, output_table, DDL)

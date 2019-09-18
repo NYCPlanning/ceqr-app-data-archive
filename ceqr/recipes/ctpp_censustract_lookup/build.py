@@ -6,12 +6,6 @@ import geopandas as gpd
 import pandas as pd
 import time
 
-geo_list = ['09001', '09005', '09009', '34003', '34013', '34017', 
-    '34019', '34021', '34023', '34025', '34027', '34029', '34031', 
-    '34035', '34037', '34039', '34041', '36005', '36027', '36047', 
-    '36059', '36061', '36071', '36079', '36081', '36085', '36087', 
-    '36103', '36105', '36111', '36119']
-
 if __name__ == "__main__": 
     beg_ts = time.time()
 
@@ -20,6 +14,7 @@ if __name__ == "__main__":
     input_table_ct = config['inputs'][0] 
     input_table_ny = config['inputs'][1] 
     input_table_nj = config['inputs'][2]
+    ctpp_journey_to_work = config['inputs'][3]
 
     output_table = config['outputs'][0]['output_table'] #ctpp_censustract_lookup
     DDL = config['outputs'][0]['DDL']
@@ -37,6 +32,11 @@ if __name__ == "__main__":
     # rename the geoid column
     ct_shp.rename(columns={'GEOID':'geoid'}, inplace=True)
 
+    df = pd.read_sql(f'''
+                    SELECT residential_geoid, work_geoid
+                    FROM {ctpp_journey_to_work}
+                    ''', con=edm_engine)
+
     # find out the unique census tracts between residential_geoid and work_geoid
     geoid_list = pd.concat([df.residential_geoid, df.work_geoid]).unique().astype('str')
 
@@ -45,8 +45,6 @@ if __name__ == "__main__":
 
     # merge the journey to work census tract list with shapefile
     df_geo = pd.merge(geoid_df, ct_shp[['geoid','centroid']], on = 'geoid')
-
-    # df_geo['centroid'] = df_geo.centroid.astype('str')
 
     # exporter(df_geo, output_table, DDL,
     #         sql=f'UPDATE {output_table2} SET centroid=ST_SetSRID(centroid,4326)')

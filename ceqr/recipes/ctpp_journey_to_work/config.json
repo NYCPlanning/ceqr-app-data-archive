@@ -8,7 +8,7 @@
             "DDL":{
                 "residential_geoid": "character varying",
                 "work_geoid": "character varying",
-                "MODE": "character varying",
+                "\"MODE\"": "character varying",
                 "count": "integer",
                 "standard_error": "double precision"
             }
