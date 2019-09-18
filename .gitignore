@@ -5,3 +5,4 @@
 *__pycache__/*
 *.DS_Store
 !ceqr/recipes/doe_significant_utilization_changes/output/sharepoint_urls.csv
+**/base
