@@ -131,7 +131,7 @@ if __name__ == "__main__":
                                     /row['total_est_cost'], axis=1)  
 
     # export table to EDM_DATA
-    exporter(df=df.loc[1:5, :], 
+    exporter(df=df, 
             output_table=output_table, 
             con=edm_engine, 
             DDL=DDL, 
