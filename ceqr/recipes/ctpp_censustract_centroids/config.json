@@ -7,7 +7,7 @@
         ],
     "outputs": [
          {
-            "output_table": "ctpp_censustract_lookup.\"2006_2010\"",
+            "output_table": "ctpp_censustract_centroids.\"2006_2010\"",
             "DDL":{
                 "geoid": "character varying",
                 "centroid": "geometry(Point,4326)"

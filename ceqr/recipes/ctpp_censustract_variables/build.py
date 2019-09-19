@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
     # clean value and moe 
     df['value'] = df['value'].apply(lambda x:x.replace(',','')).astype(int)
-    df['moe'] = df['moe'].apply(lambda x: x[3:].replace(',','').replace('+/-', ''))\
+    df['moe'] = df['moe'].apply(lambda x: x.replace(',','').replace('+/-', ''))\
                             .replace(r'^\s*$', np.nan, regex=True).apply(add_zero).astype(float)
     
     # conduct data etl

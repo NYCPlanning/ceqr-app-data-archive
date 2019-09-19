@@ -1,4 +1,4 @@
-# ctpp-journey-to-work
+# ctpp-censustract-centroids
 
 ## Instructions: 
 1. install dependencies `pip3 install -r requirements.txt`
@@ -9,14 +9,11 @@
 * input:
   * `ctpp_journey_to_work."2019/09/16"` in RECIPE_ENGINE
 * output: 
-  * `ctpp_journey_to_work.2006_2010` in EDM_DATA
+  * `ctpp_censustract_centroids.2006_2010` in EDM_DATA
 * DDL: 
   ```sql
-  CREATE TABLE ctpp_journey_to_work."2006_2010" (
-    residential_geoid character varying,
-    work_geoid character varying,
-    "MODE" character varying,
-    count integer,
-    standard_error double precision
+  CREATE TABLE ctpp_censustract_centroids."2006_2010" (
+        geoid character varying,
+        centroid geometry(Point,4326)
   );
   ```
