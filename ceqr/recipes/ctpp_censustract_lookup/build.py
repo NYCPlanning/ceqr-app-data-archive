@@ -1,6 +1,7 @@
 from ceqr.helper.engines import recipe_engine, edm_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter
+from shapely.wkt import loads, dumps
 from pathlib import Path
 import geopandas as gpd
 import pandas as pd
@@ -45,7 +46,8 @@ if __name__ == "__main__":
 
     # merge the journey to work census tract list with shapefile
     df_geo = pd.merge(geoid_df, ct_shp[['geoid','centroid']], on = 'geoid')
+    df_geo['centroid'] = df_geo['centroid'].apply(lambda x: loads(dumps(x)).wkt)
+    print(df_geo.head())
 
-    # exporter(df_geo, output_table, DDL,
-    #         sql=f'UPDATE {output_table2} SET centroid=ST_SetSRID(centroid,4326)')
-    exporter(df_geo, output_table, DDL)
+    exporter(df_geo, output_table, DDL,
+            sql=f'UPDATE {output_table} SET centroid=ST_SetSRID(centroid,4326)')
