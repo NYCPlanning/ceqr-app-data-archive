@@ -5,6 +5,7 @@ import pandas as pd
 from pathlib import Path
 import numpy as np
 import geopandas as gpd
+import os
 
 if __name__ == "__main__":
     # Load configuration (note: please use relative paths)
@@ -46,20 +47,11 @@ if __name__ == "__main__":
     doe_lcgms['ic'] = 0
     doe_lcgms['hc'] = 0
     
-    # merge doe_lcgms and sca_bluebook and update column type
+    # merge doe_lcgms and sca_bluebook
     df = sca_bluebook[DDL.keys()].append(doe_lcgms[DDL.keys()])
-    df['district'] = df.district.astype('int')
-    df['subdistrict'] = df.subdistrict.astype('int')
-    df['borocode'] = df.borocode.astype('int')
-    df['excluded'] = df.excluded.astype('bool')
-    df['pc'] = df.excluded.astype('int')
-    df['pe'] = df.excluded.astype('int')
-    df['ic'] = df.excluded.astype('int')
-    df['ie'] = df.excluded.astype('int')
-    df['hc'] = df.excluded.astype('int')
-    df['he'] = df.excluded.astype('int')
     df['geom'] = df.geom.astype('str')
     
+    os.system('echo "exporting table ..."')
     # export table to EDM_DATA
     exporter(df=df, 
              output_table=output_table,  

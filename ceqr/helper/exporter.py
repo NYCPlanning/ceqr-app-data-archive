@@ -20,4 +20,4 @@ def exporter(df, output_table, DDL, con=edm_engine, sql='', chunksize=10000):
 
     # # Change to target DDL
     for key, value in DDL.items():
-        con.connect().execute(f'ALTER TABLE {output_table} ALTER COLUMN {key} TYPE {value};')
+        con.connect().execute(f'ALTER TABLE {output_table} ALTER COLUMN {key} TYPE {value} USING ({key}::{value});')
