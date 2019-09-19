@@ -32,6 +32,6 @@
     he integer,
     source text,
     geom geometry(Point,4326)
-);
+  );
 
   ```
