@@ -1,0 +1,32 @@
+{
+    "inputs": [
+        "doe_lcgms.\"2018\"",
+        "sca_bluebook.\"2018\"",
+        "doe_school_subdistricts.\"2017\""
+        ],
+    "outputs": [
+        {
+            "output_table": "ceqr_school_buildings.\"2018\"",
+            "DDL": {
+                "district": "integer",
+                "subdistrict": "integer",
+                "borocode": "integer",
+                "bldg_name": "character varying",
+                "excluded": "boolean",
+                "bldg_id": "character varying",
+                "org_id": "character varying",
+                "org_level": "character varying",
+                "name": "character varying",
+                "address": "character varying",
+                "pc": "integer",
+                "pe": "integer",
+                "ic": "integer",
+                "ie": "integer",
+                "hc": "integer",
+                "he": "integer",
+                "source": "text",
+                "geom": "geometry(Point,4326)"
+            }
+        }
+    ]
+}
