@@ -17,28 +17,11 @@ if __name__ == "__main__":
     DDL = config['outputs'][0]['DDL']
 
     # import data
-    sca_bluebook = pd.read_sql(f'select * from {input_table_bluebook}', con=ceqr_engine)
+    sca_bluebook = pd.read_sql(f'select * from {input_table_bluebook}', con=recipe_engine)
     doe_lcgms = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_lcgms}', 
-                                                    con=ceqr_engine, geom_col='geom')
+                                                    con=recipe_engine, geom_col='geom')
     doe_school_subdistrict = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_subdistricts}', 
                                                                 con=ceqr_engine, geom_col='geom')
-    
-    # rename column names
-    if output_table_version == '2017': 
-        sca_bluebook.columns = ['ogc_fid', 'cartodb_id', 'district', 'subdistrict', 'borocode',
-                                'bldg_name', 'excluded', 'bldg_id', 'org_id', 'org_level', 'name',
-                                'address', 'pc', 'pe', 'ic', 'ie',
-                                'hc', 'he', 'geom']
-        doe_lcgms.columns = ['ogc_fid', 'cartodb_id', 'org_id', 'bldg_id', 'org_level', 'grades',
-                                'pe', 'ie', 'he', 'name', 'address', 'bbl', 'lat',
-                                'lng', 'geom']
-    else: # output table version is later than 2017
-        sca_bluebook.columns = ['ogc_fid', 'cartodb_id', 'district', 'subdistrict', 'borocode',
-                                'bldg_name', 'excluded', 'bldg_id', 'org_id', 'org_level', 'name',
-                                'address', 'pc', 'pe', 'ic', 'ie', 'hc', 'he', 'x', 'y', 'geom']
-        doe_lcgms.columns = ['ogc_fid', 'cartodb_id', 'org_id', 'bldg_id', 'org_level', 'name',
-                            'address', 'bbl', 'lat', 'lng', 'pe', 'ie', 'he','grades', 'geom']
-    
     # add source column
     doe_lcgms['source'] = 'lcgms'
     sca_bluebook['source'] = 'bluebook'
@@ -63,13 +46,19 @@ if __name__ == "__main__":
     doe_lcgms['ic'] = 0
     doe_lcgms['hc'] = 0
     
-    # merge doe_lcgms and sca_bluebook
-    columns = ['district', 'subdistrict', 'borocode', 'bldg_name', 'excluded', 
-               'bldg_id', 'org_id', 'org_level', 'name', 'address', 'pc', 'pe', 
-               'ic', 'ie', 'hc', 'he', 'source','geom']
-    df = sca_bluebook[columns].append(doe_lcgms[columns])
+    # merge doe_lcgms and sca_bluebook and update column type
+    df = sca_bluebook[DDL.keys()].append(doe_lcgms[DDL.keys()])
+    df['district'] = df.district.astype('int')
+    df['subdistrict'] = df.subdistrict.astype('int')
+    df['borocode'] = df.borocode.astype('int')
+    df['excluded'] = df.excluded.astype('bool')
+    df['pc'] = df.excluded.astype('int')
+    df['pe'] = df.excluded.astype('int')
+    df['ic'] = df.excluded.astype('int')
+    df['ie'] = df.excluded.astype('int')
+    df['hc'] = df.excluded.astype('int')
+    df['he'] = df.excluded.astype('int')
     df['geom'] = df.geom.astype('str')
-
     
     # export table to EDM_DATA
     exporter(df=df, 

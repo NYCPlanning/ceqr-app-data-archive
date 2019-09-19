@@ -6,8 +6,8 @@
 
 ## Data info: 
 * input:
-  * `doe_lcgms.\"2018\"` in CEQR_ENGINE
-  * `sca_bluebook.\"2018\"` in CEQR_ENGINE
+  * `doe_lcgms.\"2018\"` in RECIPE_ENGINE
+  * `sca_bluebook.\"2018\"` in RECIPE_ENGINE
   * `doe_school_subdistricts.\"2018\"` in CEQR_ENGINE
 * output: 
   * `ceqr_school_buildings.\"2018\"` in EDM_DATA
