@@ -8,7 +8,7 @@ import geopandas as gpd
 import os
 
 if __name__ == "__main__":
-    # Load configuration (note: please use relative paths)
+    # Load configuration
     config = load_config(Path(__file__).parent/'config.json')
     input_table_lcgms = config['inputs'][0]
     input_table_bluebook = config['inputs'][1]
@@ -31,13 +31,8 @@ if __name__ == "__main__":
     doe_lcgms = doe_lcgms[~(doe_lcgms.org_id+doe_lcgms.bldg_id).isin(sca_bluebook.org_id+sca_bluebook.bldg_id)]
 
     # perform spatial join between lcgms and doe_school_subdistrict shapefile
-    lcgms_district_lookup = gpd.sjoin(doe_lcgms[['org_id','bldg_id','geom']], 
-                                      doe_school_subdistrict[['district','subdistrict', 'geom']], op='within')
+    doe_lcgms = gpd.sjoin(doe_lcgms, doe_school_subdistrict[['district','subdistrict', 'geom']], op='within')
     doe_lcgms = pd.DataFrame(doe_lcgms)
-    lcgms_district_lookup = pd.DataFrame(lcgms_district_lookup)
-    doe_lcgms = pd.merge(doe_lcgms, lcgms_district_lookup[['org_id','bldg_id','district','subdistrict']], 
-                            on=['org_id','bldg_id'])
-     
 
     # perform column transformation for doe_lcgms 
     doe_lcgms['borocode'] = doe_lcgms.bbl.apply(lambda x: str(x)[0]).astype(int)
