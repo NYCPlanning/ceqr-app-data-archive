@@ -1,4 +1,4 @@
-# ceqr_school_buildings
+# ceqr-school-buildings
 
 ## Instructions: 
 1. install dependencies `pip3 install -r requirements.txt`
