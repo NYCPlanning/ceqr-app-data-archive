@@ -18,8 +18,10 @@ if __name__ == "__main__":
 
     # import data
     sca_bluebook = pd.read_sql(f'select * from {input_table_bluebook}', con=ceqr_engine)
-    doe_lcgms = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_lcgms}', con=ceqr_engine, geom_col='geom' )
-    doe_school_subdistrict = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_subdistricts}', con=ceqr_engine, geom_col='geom' )
+    doe_lcgms = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_lcgms}', 
+                                                    con=ceqr_engine, geom_col='geom')
+    doe_school_subdistrict = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_subdistricts}', 
+                                                                con=ceqr_engine, geom_col='geom')
     
     # rename column names
     if output_table_version == '2017': 
@@ -45,10 +47,12 @@ if __name__ == "__main__":
     doe_lcgms = doe_lcgms[~(doe_lcgms.org_id+doe_lcgms.bldg_id).isin(sca_bluebook.org_id+sca_bluebook.bldg_id)]
 
     # perform spatial join between lcgms and doe_school_subdistrict shapefile
-    lcgms_district_lookup = gpd.sjoin(doe_lcgms[['org_id','bldg_id','geom']], doe_school_subdistrict[['district','subdistrict', 'geom']], op='within')
+    lcgms_district_lookup = gpd.sjoin(doe_lcgms[['org_id','bldg_id','geom']], 
+                                      doe_school_subdistrict[['district','subdistrict', 'geom']], op='within')
     doe_lcgms = pd.DataFrame(doe_lcgms)
     lcgms_district_lookup = pd.DataFrame(lcgms_district_lookup)
-    doe_lcgms = pd.merge(doe_lcgms, lcgms_district_lookup[['org_id','bldg_id','district','subdistrict']], on=['org_id','bldg_id'])
+    doe_lcgms = pd.merge(doe_lcgms, lcgms_district_lookup[['org_id','bldg_id','district','subdistrict']], 
+                            on=['org_id','bldg_id'])
      
 
     # perform column transformation for doe_lcgms 
