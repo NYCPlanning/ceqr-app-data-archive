@@ -7,7 +7,7 @@
 
 ## Data info: 
 * input:
-  * `ctpp_journey_to_work."2019/09/16"` in RECIPE_ENGINE
+  * `ctpp_journey_to_work."2006_2010"` in EDM_DATA
 * output: 
   * `ctpp_censustract_centroids.2006_2010` in EDM_DATA
 * DDL: 
