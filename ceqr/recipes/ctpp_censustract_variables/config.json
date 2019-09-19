@@ -1,0 +1,16 @@
+{
+    "inputs": [
+        "ctpp_mode_split_ny.\"2012_2016\""
+        ],
+    "outputs": [
+         {
+            "output_table": "ctpp_censustract_variables.\"2012_2016\"",
+            "DDL":{
+                "geoid": "character varying",
+                "value": "integer",
+                "moe": "integer",
+                "variable": "character varying"
+            }
+        }
+    ]
+}

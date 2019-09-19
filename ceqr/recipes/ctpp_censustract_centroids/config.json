@@ -1,0 +1,17 @@
+{
+    "inputs": [
+        "uscensus_ct_shp.\"2019/09/17\"", 
+        "uscensus_ny_shp.\"2019/09/17\"", 
+        "uscensus_nj_shp.\"2019/09/17\"",
+        "ctpp_journey_to_work.\"2006_2010\""
+        ],
+    "outputs": [
+         {
+            "output_table": "ctpp_censustract_centroids.\"2006_2010\"",
+            "DDL":{
+                "geoid": "character varying",
+                "centroid": "geometry(Point,4326)"
+            }
+        }
+    ]
+}
