@@ -14,15 +14,14 @@ if __name__ == "__main__":
     input_table_bluebook = config['inputs'][1]
     input_table_subdistricts = config['inputs'][2]
     output_table = config['outputs'][0]['output_table']
-    output_table_version = config['outputs'][0]['output_table'].split('.')[1].strip('\"')
     DDL = config['outputs'][0]['DDL']
 
     # import data
-    sca_bluebook = pd.read_sql(f'select * from {input_table_bluebook}', con=recipe_engine)
+    sca_bluebook = pd.read_sql(f'SELECT * FROM {input_table_bluebook}', con=recipe_engine)
     doe_lcgms = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_lcgms}', 
                                                     con=recipe_engine, geom_col='geom')
     doe_school_subdistrict = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_subdistricts}', 
-                                                                con=ceqr_engine, geom_col='geom')
+                                                    con=ceqr_engine, geom_col='geom')
     # add source column
     doe_lcgms['source'] = 'lcgms'
     sca_bluebook['source'] = 'bluebook'
