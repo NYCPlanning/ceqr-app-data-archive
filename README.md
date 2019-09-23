@@ -6,3 +6,4 @@ data pipelines for CEQR app, managed by data engineering
 2. do `python3 -m venv base`
 3. do `source base/bin/activate` to deactivate, type `deactivate`
 4. do `pip3 install -e .`
+4. do `ceqr run <data schema>` at root directory
