@@ -1,9 +1,11 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter
-from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError
+from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError, create_geom
 from multiprocessing import Pool, cpu_count
+from shapely.wkt import loads, dumps
 import pandas as pd
+import geopandas as gpd
 from pathlib import Path
 import numpy as np
 import os
@@ -25,14 +27,12 @@ def geocode(inputs):
     geo.update(inputs)
     return geo
 
-def parser(geo): 
+def parser(geo):
     return dict(
         house_number = geo.get('House Number - Display Format', ''),
         street_name = geo.get('First Street Name Normalized', ''),
         bbl = geo.get('BOROUGH BLOCK LOT (BBL)', {}).get('BOROUGH BLOCK LOT (BBL)', '',),
         bin = geo.get('Building Identification Number (BIN) of Input Address or NAP', ''),
-        xcoord = geo.get('SPATIAL X-Y COORDINATES OF ADDRESS', {}).get('X Coordinate', '',),
-        ycoord = geo.get('SPATIAL X-Y COORDINATES OF ADDRESS', {}).get('Y Coordinate', '',),
         latitude = geo.get('Latitude', ''),
         longitude = geo.get('Longitude', ''),
         grc = geo.get('Geosupport Return Code (GRC)', ''),        
@@ -69,6 +69,11 @@ if __name__ == "__main__":
     df = pd.DataFrame(it)
     df = df[df['grc'] != '71']
 
+    df['longitude'] = pd.to_numeric(df['longitude'],errors='coerce')
+    df['latitude'] = pd.to_numeric(df['latitude'],errors='coerce')
+    df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude))
+    df['geometry'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
+
     SQL = f'''
         ALTER TABLE dec_facility_permits.latest 
         ADD COLUMN id SERIAL PRIMARY KEY;
@@ -89,6 +94,8 @@ if __name__ == "__main__":
         );
 
         ALTER TABLE dec_facility_permits.latest DROP COLUMN id;
+
+        UPDATE {output_table} SET geometry=ST_SetSRID(geometry,4326); 
         '''
 
     os.system('echo "exporting table ..."')

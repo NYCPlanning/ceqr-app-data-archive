@@ -1,6 +1,8 @@
 from geosupport import Geosupport, GeosupportError
 import usaddress
 import re
+from shapely.geometry import Point
+
 g = Geosupport()
 
 def get_hnum(address):
@@ -17,3 +19,9 @@ def get_sname(address):
         return address
     else: 
         return result
+
+def create_geom(lon, lat):
+        lon = float(lon) if lon != '' else None
+        lat = float(lat) if lat != '' else None
+        if (lon is not None) and (lat is not None): 
+                return str(Point(lon, lat))

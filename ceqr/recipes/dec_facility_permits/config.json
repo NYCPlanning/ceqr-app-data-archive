@@ -22,11 +22,10 @@
                 "street_name": "text",
                 "bbl": "text",
                 "bin": "text",
-                "xcoord": "text",
-                "ycoord": "text",
                 "latitude": "text",
                 "longitude": "text",
-                "grc": "text"
+                "grc": "text",
+                "geometry": "geometry(Point,4326)"
             }
         }
     ]
