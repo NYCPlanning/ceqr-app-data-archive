@@ -1,10 +1,44 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter
+from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError
+from multiprocessing import Pool, cpu_count
 import pandas as pd
 from pathlib import Path
 import numpy as np
 import os
+
+def geocode(inputs):
+    hnum = inputs.pop('hnum')
+    sname = inputs.pop('sname')
+    zip_code = inputs.pop('zip_code')
+
+    hnum = str('' if hnum is None else hnum)
+    sname = str('' if sname is None else sname)
+    zip_code = str('' if zip_code is None else zip_code)
+    try: 
+        geo = g['1B'](street_name=sname, house_number=hnum, zip_code=zip_code)
+    except GeosupportError as e:
+        geo = e.result
+    
+    geo = parser(geo)
+    geo.update(inputs)
+    return geo
+
+def parser(geo): 
+    return dict(
+        house_number = geo.get('House Number - Display Format', ''),
+        street_name = geo.get('First Street Name Normalized', ''),
+        bbl = geo.get('BOROUGH BLOCK LOT (BBL)', {}).get('BOROUGH BLOCK LOT (BBL)', '',),
+        bin = geo.get('Building Identification Number (BIN) of Input Address or NAP', ''),
+        xcoord = geo.get('SPATIAL X-Y COORDINATES OF ADDRESS', {}).get('X Coordinate', '',),
+        ycoord = geo.get('SPATIAL X-Y COORDINATES OF ADDRESS', {}).get('Y Coordinate', '',),
+        latitude = geo.get('Latitude', ''),
+        longitude = geo.get('Longitude', ''),
+        grc = geo.get('Geosupport Return Code (GRC)', ''),        
+    )
+def test(a):
+    return {'a':'1', 'b':'2'}
 
 if __name__ == "__main__":
     # Load configuration
@@ -21,9 +55,23 @@ if __name__ == "__main__":
     dec_title_v_facility_permits.columns = dec_state_facility_permits.columns
 
     df = dec_state_facility_permits.append(dec_title_v_facility_permits)
+
+    # geocoding ... with 1E
+    df['hnum'] = df['facility_location'].apply(get_hnum)
+    df['sname'] = df['facility_location'].apply(get_sname)
+    df['zip_code'] = df['facility_zip']
+    records = df.to_dict('records')
+
+    # Multiprocess
+    with Pool(processes=cpu_count()) as pool:
+        it = pool.map(geocode, records, 10000)
     
+    df = pd.DataFrame(it)
+    df = df[df['grc'] != '71']
+
     SQL = f'''
-        ALTER TABLE dec_facility_permits.latest ADD COLUMN id SERIAL PRIMARY KEY;
+        ALTER TABLE dec_facility_permits.latest 
+        ADD COLUMN id SERIAL PRIMARY KEY;
 
         DELETE FROM {output_table}
         WHERE id NOT IN(
@@ -49,4 +97,3 @@ if __name__ == "__main__":
              output_table=output_table,  
              DDL=DDL,
              sql=SQL)
-             

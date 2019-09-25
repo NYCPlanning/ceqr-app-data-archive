@@ -12,6 +12,7 @@
   * `dec_facility_permits.latest` in EDM_DATA
 * DDL: 
   ```sql
+  CREATE TABLE dec_facility_permits.latest (
     facility_name text,
     permit_id text,
     url_to_permit_text text,
@@ -24,4 +25,5 @@
     location text,
     source text,
     geom geometry(Point,4326)
+  );
   ```

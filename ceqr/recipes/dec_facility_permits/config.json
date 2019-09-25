@@ -17,7 +17,16 @@
                 "issue_date": "text",
                 "expire_date": "text",
                 "location": "text",
-                "source":"text"
+                "source":"text",
+                "house_number": "text",
+                "street_name": "text",
+                "bbl": "text",
+                "bin": "text",
+                "xcoord": "text",
+                "ycoord": "text",
+                "latitude": "text",
+                "longitude": "text",
+                "grc": "text"
             }
         }
     ]
