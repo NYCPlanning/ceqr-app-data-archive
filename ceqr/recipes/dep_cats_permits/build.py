@@ -10,9 +10,9 @@ import numpy as np
 import os
 
 def geocode(inputs):
-    hnum = inputs.pop('house')
-    sname = inputs.pop('street')
-    borough = inputs.pop('borough')
+    hnum = inputs.get('house', '')
+    sname = inputs.get('street', '')
+    borough = inputs.get('borough', '')
 
     hnum = str('' if hnum is None else hnum)
     sname = str('' if sname is None else sname)
