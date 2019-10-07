@@ -2,7 +2,8 @@ from bs4 import BeautifulSoup
 import requests
 from pathlib import Path
 import dateutil.parser as dparser
-import re 
+import re
+import os
 import urllib
 from itertools import groupby
 import pandas as pd
@@ -92,4 +93,5 @@ if __name__ == "__main__":
             proposals1.append(g1)
         
         df = pd.DataFrame(proposals1)
+        os.system(f'mkdir -p {Path(__file__).parent}/output')
         df.to_csv(str(Path(__file__).parent/'output/sharepoint_urls.csv'))

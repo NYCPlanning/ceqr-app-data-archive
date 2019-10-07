@@ -64,5 +64,4 @@ if __name__ == "__main__":
     # export table to EDM_DATA
     exporter(df=df, 
              output_table=output_table,
-             DDL=DDL,
-             sql=f'UPDATE {output_table} SET geometry=ST_SetSRID(geometry,4326);')
+             DDL=DDL)
