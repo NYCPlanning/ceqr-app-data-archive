@@ -1,7 +1,7 @@
 {
     "inputs": [
-        "dec_state_facility_permits.latest",
-        "dec_title_v_facility_permits.latest"
+        "nysdec_state_facility_permits.latest",
+        "nysdec_title_v_facility_permits.latest"
         ],
     "outputs": [
         {
