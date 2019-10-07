@@ -9,7 +9,7 @@
   * `nysdec_state_facility_permits.latest` in RECIPE_ENGINE
   * `nysdec_title_v_facility_permits.latest` in RECIPE_ENGINE
 * output: 
-  * `dec_facility_permits.latest` in EDM_DATA
+  * `nysdec_facility_permits.latest` in EDM_DATA
 * DDL: 
   ```sql
   CREATE TABLE dec_facility_permits.latest (

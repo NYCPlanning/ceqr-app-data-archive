@@ -70,7 +70,7 @@ if __name__ == "__main__":
     df = df[df['grc'] != '71']
 
     SQL = f'''
-        ALTER TABLE dec_facility_permits.latest 
+        ALTER TABLE {output_table} 
         ADD COLUMN id SERIAL PRIMARY KEY;
 
         DELETE FROM {output_table}
@@ -88,7 +88,7 @@ if __name__ == "__main__":
             GROUP BY p.facility_name||facility_location
         );
 
-        ALTER TABLE dec_facility_permits.latest DROP COLUMN id;
+        ALTER TABLE {output_table} DROP COLUMN id;
         '''
 
     os.system('echo "exporting table ..."')
