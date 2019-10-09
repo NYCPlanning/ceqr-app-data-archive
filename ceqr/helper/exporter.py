@@ -5,7 +5,9 @@ import psycopg2
 import logging
 import os
 
-def exporter(df, output_table, DDL, con=edm_engine, sql='', sep=',', geo_column='', SRID=4326):
+def exporter(df, output_table, DDL, 
+            con=edm_engine, sql='', sep=',', 
+            geo_column='', SRID=4326):
     # parse output table
     schema = output_table.split('.')[0]
     version = output_table.split('.')[1].replace('"', '')
