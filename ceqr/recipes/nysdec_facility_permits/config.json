@@ -1,11 +1,11 @@
 {
     "inputs": [
-        "dec_state_facility_permits.latest",
-        "dec_title_v_facility_permits.latest"
+        "nysdec_state_facility_permits.latest",
+        "nysdec_title_v_facility_permits.latest"
         ],
     "outputs": [
         {
-            "output_table" : "dec_facility_permits.latest",
+            "output_table" : "nysdec_facility_permits.latest",
             "DDL": {
                 "facility_name": "text",
                 "permit_id": "text",

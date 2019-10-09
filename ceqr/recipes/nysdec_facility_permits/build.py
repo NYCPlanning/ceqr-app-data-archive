@@ -18,11 +18,11 @@ def geocode(inputs):
     hnum = str('' if hnum is None else hnum)
     sname = str('' if sname is None else sname)
     zip_code = str('' if zip_code is None else zip_code)
-    try: 
+    try:
         geo = g['1B'](street_name=sname, house_number=hnum, zip_code=zip_code)
     except GeosupportError as e:
         geo = e.result
-    
+
     geo = parser(geo)
     geo.update(inputs)
     return geo
@@ -35,7 +35,7 @@ def parser(geo):
         bin = geo.get('Building Identification Number (BIN) of Input Address or NAP', ''),
         latitude = geo.get('Latitude', ''),
         longitude = geo.get('Longitude', ''),
-        grc = geo.get('Geosupport Return Code (GRC)', ''),        
+        grc = geo.get('Geosupport Return Code (GRC)', ''),
     )
 def test(a):
     return {'a':'1', 'b':'2'}
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     # Multiprocess
     with Pool(processes=cpu_count()) as pool:
         it = pool.map(geocode, records, 10000)
-    
+
     df = pd.DataFrame(it)
     df = df[df['grc'] != '71']
 
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     df['geometry'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
 
     SQL = f'''
-        ALTER TABLE dec_facility_permits.latest 
+        ALTER TABLE {output_table}
         ADD COLUMN id SERIAL PRIMARY KEY;
 
         DELETE FROM {output_table}
@@ -93,14 +93,12 @@ if __name__ == "__main__":
             GROUP BY p.facility_name||facility_location
         );
 
-        ALTER TABLE dec_facility_permits.latest DROP COLUMN id;
-
-        UPDATE {output_table} SET geometry=ST_SetSRID(geometry,4326); 
+        ALTER TABLE {output_table} DROP COLUMN id;
         '''
 
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
-    exporter(df=df, 
-             output_table=output_table,  
+    exporter(df=df,
+             output_table=output_table,
              DDL=DDL,
              sql=SQL)

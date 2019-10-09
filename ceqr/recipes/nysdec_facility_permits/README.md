@@ -6,10 +6,10 @@
 
 ## Data info: 
 * input:
-  * `dec_state_facility_permits.latest` in RECIPE_ENGINE
-  * `dec_title_v_facility_permits.latest` in RECIPE_ENGINE
+  * `nysdec_state_facility_permits.latest` in RECIPE_ENGINE
+  * `nysdec_title_v_facility_permits.latest` in RECIPE_ENGINE
 * output: 
-  * `dec_facility_permits.latest` in EDM_DATA
+  * `nysdec_facility_permits.latest` in EDM_DATA
 * DDL: 
   ```sql
   CREATE TABLE dec_facility_permits.latest (
@@ -24,6 +24,14 @@
     expire_date text,
     location text,
     source text,
-    geom geometry(Point,4326)
+    house_number text,
+    street_name text,
+    bbl text,
+    bin text,
+    xcoord text,
+    ycoord text,
+    latitude text,
+    longitude text,
+    grc text
   );
   ```
