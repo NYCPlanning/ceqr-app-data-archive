@@ -11,7 +11,9 @@ setup(
             'psycopg2-binary',
             'sqlalchemy',
             'pandas',
-            'python-dotenv'],
+            'python-dotenv', 
+            'geopandas', 
+            'shapely'],
         entry_points='''
         [console_scripts]
         ceqr=ceqr.cli:cli

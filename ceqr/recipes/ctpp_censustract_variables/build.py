@@ -155,4 +155,4 @@ if __name__ == "__main__":
     df = etl(df)
     
     # export to EDM_DATA
-    exporter(df, output_table, DDL, chunksize=100000)
+    exporter(df, output_table, DDL)

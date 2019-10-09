@@ -1,0 +1,38 @@
+{
+    "inputs": [
+        "dep_cats_permits.latest"
+        ],
+    "outputs": [
+        {
+            "output_table" : "dec_cats_permits.latest",
+            "DDL": {
+                "requestid": "text",
+                "applicationid": "text",
+                "requesttype": "text",
+                "ownername": "text",
+                "expirationdate": "text",
+                "make": "text",
+                "model": "text",
+                "burnermake": "text",
+                "burnermodel": "text",
+                "primaryfuel": "text",
+                "secondaryfuel": "text",
+                "quantity": "text",
+                "issuedate": "text",
+                "status": "text",
+                "premisename": "text",
+                "house": "text", 
+                "street": "text", 
+                "borough": "text",
+                "house_number": "text",
+                "street_name": "text",
+                "bbl": "text",
+                "bin": "text",
+                "latitude": "text",
+                "longitude": "text",
+                "grc": "text",
+                "geometry": "geometry(Point,4326)"
+            }
+        }
+    ]
+}

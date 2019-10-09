@@ -1,9 +1,11 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter
-from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError
+from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError, create_geom
 from multiprocessing import Pool, cpu_count
+from shapely.wkt import loads, dumps
 import pandas as pd
+import geopandas as gpd
 from pathlib import Path
 import numpy as np
 import os
@@ -16,26 +18,24 @@ def geocode(inputs):
     hnum = str('' if hnum is None else hnum)
     sname = str('' if sname is None else sname)
     zip_code = str('' if zip_code is None else zip_code)
-    try: 
+    try:
         geo = g['1B'](street_name=sname, house_number=hnum, zip_code=zip_code)
     except GeosupportError as e:
         geo = e.result
-    
+
     geo = parser(geo)
     geo.update(inputs)
     return geo
 
-def parser(geo): 
+def parser(geo):
     return dict(
         house_number = geo.get('House Number - Display Format', ''),
         street_name = geo.get('First Street Name Normalized', ''),
         bbl = geo.get('BOROUGH BLOCK LOT (BBL)', {}).get('BOROUGH BLOCK LOT (BBL)', '',),
         bin = geo.get('Building Identification Number (BIN) of Input Address or NAP', ''),
-        xcoord = geo.get('SPATIAL X-Y COORDINATES OF ADDRESS', {}).get('X Coordinate', '',),
-        ycoord = geo.get('SPATIAL X-Y COORDINATES OF ADDRESS', {}).get('Y Coordinate', '',),
         latitude = geo.get('Latitude', ''),
         longitude = geo.get('Longitude', ''),
-        grc = geo.get('Geosupport Return Code (GRC)', ''),        
+        grc = geo.get('Geosupport Return Code (GRC)', ''),
     )
 def test(a):
     return {'a':'1', 'b':'2'}
@@ -65,12 +65,17 @@ if __name__ == "__main__":
     # Multiprocess
     with Pool(processes=cpu_count()) as pool:
         it = pool.map(geocode, records, 10000)
-    
+
     df = pd.DataFrame(it)
     df = df[df['grc'] != '71']
 
+    df['longitude'] = pd.to_numeric(df['longitude'],errors='coerce')
+    df['latitude'] = pd.to_numeric(df['latitude'],errors='coerce')
+    df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.longitude, df.latitude))
+    df['geometry'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
+
     SQL = f'''
-        ALTER TABLE {output_table} 
+        ALTER TABLE {output_table}
         ADD COLUMN id SERIAL PRIMARY KEY;
 
         DELETE FROM {output_table}
@@ -93,7 +98,7 @@ if __name__ == "__main__":
 
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
-    exporter(df=df, 
-             output_table=output_table,  
+    exporter(df=df,
+             output_table=output_table,
              DDL=DDL,
              sql=SQL)

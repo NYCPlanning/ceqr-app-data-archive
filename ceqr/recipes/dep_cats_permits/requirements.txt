@@ -1,5 +1,4 @@
 pandas
-bs4
 sqlalchemy
 psycopg2-binary
-requests
+usaddress

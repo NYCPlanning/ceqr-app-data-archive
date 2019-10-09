@@ -107,18 +107,15 @@ if __name__ == "__main__":
     DDL = config['outputs'][0]['DDL']
 
     # import data
-    df = pd.read_sql(f'''
-        select * from {input_table}
-        where type ~* 'Capacity Projects' 
-        ''', con=recipe_engine)
-
+    df = pd.read_sql(f'select * from {input_table}', con=recipe_engine)
     # perform column transformation
+    df = df[df.type.isin(['Capacity Projects', '3K Capacity Projects', 'PreK Capacity Projects'])]
     df = df.rename(columns={'projectid': 'project_dsf', 
                             'schoolname' : 'name', 
                             'geom' : 'geometry'})
 
     df['org_level'] = df['name'].apply(guess_org_level)
-    df['capacity'] = df['forecastcapacity'].apply(get_capacity_number)
+    df['capacity'] = df['forecastcapacity'].apply(get_capacity_number).fillna(0).astype(int)
     df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
     df['pct_is'] = df['org_level'].apply(estimate_pct_is)
     df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)
@@ -131,7 +128,6 @@ if __name__ == "__main__":
     df['pct_funded'] = df.apply(lambda row: (row['funding_previous']\
                                 +row['funding_current_budget'])\
                                     /row['total_est_cost'], axis=1)  
-
     # export table to EDM_DATA
     exporter(df=df, 
             output_table=output_table, 

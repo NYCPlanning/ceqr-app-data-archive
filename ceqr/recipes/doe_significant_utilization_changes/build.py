@@ -53,7 +53,7 @@ def doe_util(df):
             'other_impacted_building' : 'bldg_id_additional', 
             'proposal_title':'title', 'at_scale_year':'at_scale_year'})
     df['org_id'] = df['dbn'].apply(lambda x: x[-4:])
-    df['at_scale_enroll'] = df['at_scale_school_enrollment'].apply(get_at_scale_enroll)
+    df['at_scale_enroll'] = df['at_scale_school_enrollment'].apply(get_at_scale_enroll).astype(int)
     df['vote_date'] = df['pep_vote']
     df['date_tmp'] = df['pep_vote'].apply(get_date)
     df['school_year'] = df['pep_vote'].apply(get_school_year)

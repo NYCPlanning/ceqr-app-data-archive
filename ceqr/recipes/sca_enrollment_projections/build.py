@@ -24,8 +24,9 @@ if __name__ == "__main__":
     df['school_year'] = df.school_year.apply(lambda x: x[:4])
     df['ps'] = df['ps'] * df.multiplier
     df['is'] = df['is'] * df.multiplier
-    
-    os.system('echo "exporting table ..."')
+    df['ps'] = df['ps'].astype(int)
+    df['is'] = df['is'].astype(int)
+
     # export table to EDM_DATA
     exporter(df=df, 
              output_table=output_table,  
