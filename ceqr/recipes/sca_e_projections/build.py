@@ -30,12 +30,14 @@ if __name__ == "__main__":
         projections[school_year] = projections[school_year].astype(int)
 
     # reformat the table
-    df_ps = projections[projections.projected.isin(ps_)].drop(columns=['projected']).groupby('district')\
-                                                                  .sum().reset_index()\
-                                                                  .melt('district', var_name='school_year', value_name='ps')
-    df_is = projections[projections.projected.isin(is_)].drop(columns=['projected']).groupby('district')\
-                                                                  .sum().reset_index()\
-                                                                  .melt('district', var_name='school_year', value_name='is')
+    df_ps = projections[projections.projected.isin(ps_)].drop(columns=['projected'])\
+                                                        .groupby('district')\
+                                                        .sum().reset_index()\
+                                                        .melt('district', var_name='school_year', value_name='ps')
+    df_is = projections[projections.projected.isin(is_)].drop(columns=['projected'])\
+                                                        .groupby('district')\
+                                                        .sum().reset_index()\
+                                                        .melt('district', var_name='school_year', value_name='is')
     projections = pd.merge(df_ps, df_is, on =['district','school_year'])
 
     # merge two tables and perform column transformation
