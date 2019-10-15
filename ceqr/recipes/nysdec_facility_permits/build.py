@@ -101,4 +101,6 @@ if __name__ == "__main__":
     exporter(df=df,
              output_table=output_table,
              DDL=DDL,
-             sql=SQL)
+             sql=SQL,
+             sep='~',
+             geo_column='geometry')

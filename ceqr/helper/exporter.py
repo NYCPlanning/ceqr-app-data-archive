@@ -38,7 +38,7 @@ def exporter(df, output_table, DDL,
     df = df[columns]
 
     if geo_column != '':
-        df[geo_column] = df[geo_column].apply(lambda x: f'SRID={SRID};{x}')
+        df.loc[:, geo_column] = df.loc[:, geo_column].apply(lambda x: f'SRID={SRID};{x}' if x else '')
     else: 
         pass
     # export
@@ -56,3 +56,29 @@ def exporter(df, output_table, DDL,
     str_buffer.close()
     db_cursor.close()
     db_connection.close()
+
+def exporter_classic(df, output_table, DDL, con=edm_engine, sql='', chunksize=10000):
+    # parse output table
+    schema = output_table.split('.')[0]
+    version = output_table.split('.')[1].replace('"', '')
+
+    # check if schema exists
+    con.connect().execute(f'CREATE SCHEMA IF NOT EXISTS {schema}')
+    con.connect().execute(f'DROP TABLE IF EXISTS {output_table}')
+
+    columns = [i.strip('"') for i in DDL.keys()]
+
+    os.system(f'\necho "exporting table {output_table} ..."')
+
+    df[columns].to_sql(version, con = con, schema=schema,
+                            if_exists='replace', index=False, 
+                            chunksize=chunksize)
+
+    # additional queries or transformations:
+    if sql != '':
+        con.connect().execute(sql)
+    else: pass
+
+    # # Change to target DDL
+    for key, value in DDL.items():
+        con.connect().execute(f'ALTER TABLE {output_table} ALTER COLUMN "{key}" TYPE {value} USING ("{key}"::{value});')
