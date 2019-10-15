@@ -1,6 +1,6 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
-from ceqr.helper.exporter import exporter
+from ceqr.helper.exporter import exporter_classic
 from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError, create_geom
 from multiprocessing import Pool, cpu_count
 import pandas as pd
@@ -62,6 +62,7 @@ if __name__ == "__main__":
     df['geometry'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
 
     # export table to EDM_DATA
-    exporter(df=df, 
-             output_table=output_table,
-             DDL=DDL)
+    exporter_classic(df=df,
+            output_table=output_table,
+            DDL=DDL,
+            sql=f'UPDATE {output_table} SET geometry=ST_SetSRID(geometry,4326);')

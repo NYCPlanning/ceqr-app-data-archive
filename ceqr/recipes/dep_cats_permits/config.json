@@ -4,7 +4,7 @@
         ],
     "outputs": [
         {
-            "output_table" : "dec_cats_permits.latest",
+            "output_table" : "dep_cats_permits.latest",
             "DDL": {
                 "requestid": "text",
                 "applicationid": "text",
