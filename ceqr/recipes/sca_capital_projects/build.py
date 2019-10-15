@@ -118,7 +118,7 @@ if __name__ == "__main__":
                             'geom' : 'geometry'})
 
     df['org_level'] = df['name'].apply(guess_org_level)
-    df['capacity'] = df['forecastcapacity'].apply(get_capacity_number)
+    df['capacity'] = df['forecastcapacity'].apply(get_capacity_number).fillna(0).astype(int)
     df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
     df['pct_is'] = df['org_level'].apply(estimate_pct_is)
     df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)

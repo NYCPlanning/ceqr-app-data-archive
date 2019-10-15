@@ -66,4 +66,4 @@ if __name__ == "__main__":
 
     os.system('echo "exporting table ..."')
     # export to EDM_DATA
-    exporter(df, output_table, DDL)
+    exporter(df, output_table, DDL, sep='|')
