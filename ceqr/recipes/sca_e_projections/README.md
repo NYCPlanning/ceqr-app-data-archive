@@ -6,13 +6,13 @@
 
 ## Data info: 
 * input:
-  * `sca_enrollment_pct_by_sd.latest` in RECIPE_ENGINE
-  * `sca_enrollment_projections_by_sd.latest` in RECIPE_ENGINE
+  * `sca_e_pct.latest` in RECIPE_ENGINE
+  * `sca_e_projections.latest` in RECIPE_ENGINE
 * output: 
-  * `sca_enrollment_projections.latest` in EDM_DATA
+  * `sca_e_projections.latest` in EDM_DATA
 * DDL: 
   ```sql
-    CREATE TABLE sca_enrollment_projections."latest" (
+    CREATE TABLE sca_e_projections."latest" (
         school_year integer,
         district integer,
         subdistrict integer,

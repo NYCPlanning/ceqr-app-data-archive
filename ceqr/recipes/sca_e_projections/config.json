@@ -1,11 +1,11 @@
 {
     "inputs": [
-        "sca_enrollment_pct_by_sd.\"2018\"",
-        "sca_enrollment_projections_by_sd.\"2018\""
+        "sca_e_pct.latest",
+        "sca_e_projections.latest"
         ],
     "outputs": [
         {
-            "output_table" : "sca_enrollment_projections.\"2018\"",
+            "output_table" : "sca_e_projections.latest",
             "DDL": {
                 "school_year": "integer",
                 "district": "integer",
