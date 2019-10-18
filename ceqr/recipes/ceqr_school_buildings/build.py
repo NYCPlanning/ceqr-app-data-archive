@@ -1,11 +1,24 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
-from ceqr.helper.exporter import exporter
+from ceqr.helper.exporter import exporter_classic
 import pandas as pd
+import geopandas as gpd
 from pathlib import Path
 import numpy as np
-import geopandas as gpd
 import os
+
+def get_boro(d):
+
+    BORO = {
+        1: list(range(1,7)),
+        2: list(range(7,13)),
+        3: list(range(13,24))+[32],
+        4: list(range(24,31)),
+        5: [31]
+    }
+    for boro, district in BORO.items():
+        if int(d) in district:
+            return boro
 
 if __name__ == "__main__":
     # Load configuration
@@ -17,37 +30,50 @@ if __name__ == "__main__":
     DDL = config['outputs'][0]['DDL']
 
     # import data
-    sca_bluebook = pd.read_sql(f'SELECT * FROM {input_table_bluebook}', con=recipe_engine)
-    doe_lcgms = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_lcgms}', 
+    bluebook = pd.read_sql(f'''SELECT *, 'bluebook' AS source FROM {input_table_bluebook}''', con=recipe_engine)
+    lcgms = gpd.GeoDataFrame.from_postgis(f'''SELECT *, 'lcgms' AS source FROM {input_table_lcgms}''',
                                                     con=recipe_engine, geom_col='geom')
     doe_school_subdistrict = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_subdistricts}', 
                                                     con=ceqr_engine, geom_col='geom')
-    # add source column
-    doe_lcgms['source'] = 'lcgms'
-    sca_bluebook['source'] = 'bluebook'
-
-    # only keep the records from doe_lcgms not existing in sca_bluebook
-    doe_lcgms = doe_lcgms[~(doe_lcgms.org_id+doe_lcgms.bldg_id).isin(sca_bluebook.org_id+sca_bluebook.bldg_id)]
-
-    # perform spatial join between lcgms and doe_school_subdistrict shapefile
-    doe_lcgms = gpd.sjoin(doe_lcgms, doe_school_subdistrict[['district','subdistrict', 'geom']], op='within')
-    doe_lcgms = pd.DataFrame(doe_lcgms)
-
-    # perform column transformation for doe_lcgms 
-    doe_lcgms['borocode'] = doe_lcgms.bbl.apply(lambda x: str(x)[0]).astype(int)
-    doe_lcgms['bldg_name'] = doe_lcgms.name
-    doe_lcgms['excluded'] = False
-    doe_lcgms['pc'] = 0
-    doe_lcgms['ic'] = 0
-    doe_lcgms['hc'] = 0
     
-    # merge doe_lcgms and sca_bluebook
-    df = sca_bluebook[DDL.keys()].append(doe_lcgms[DDL.keys()])
-    df['geom'] = df.geom.astype('str')
+    # perform column transformation for bluebook
+    bluebook = bluebook[bluebook.org_level.isin(['PS','IS','HS','PSIS','ISHS'])]
+    bluebook.rename(columns={'subd': 'subdistrict', 'bldg_excl.': 'excluded', 'organization_name':'name'}, inplace = True)
+    bluebook['excluded'] = bluebook.excluded.apply(lambda x: True if x == 'Y' else False)
+    bluebook['org_e'] = bluebook['org_e'].astype(float)
+    bluebook['hs_%'] = bluebook['hs_%'].apply(lambda x: float(x[:-1])/100).astype(float)
+    bluebook['he'] = bluebook.org_e * bluebook['hs_%']
+    bluebook['he'] = bluebook['he'].fillna(0).astype(int)
+    bluebook['borocode'] = bluebook.district.apply(lambda x: get_boro(x))
+
+    # # only keep the records from lcgms not existing in bluebook
+    # lcgms = lcgms[~(lcgms.org_id+lcgms.bldg_id).isin(bluebook.org_id+bluebook.bldg_id)]
+
+    # # perform spatial join between lcgms and doe_school_subdistrict shapefile
+    # lcgms = gpd.sjoin(lcgms, doe_school_subdistrict[['district','subdistrict', 'geom']], op='within')
+    # lcgms = pd.DataFrame(lcgms)
+
+    # # perform column transformation for lcgms
+    # lcgms['borocode'] = lcgms.bbl.apply(lambda x: str(x)[0]).astype(int)
+    # lcgms['bldg_name'] = lcgms.name
+    # lcgms['excluded'] = False
+    # lcgms['pc'] = 0
+    # lcgms['ic'] = 0
+    # lcgms['hc'] = 0
+
+    # # merge lcgms and bluebook
+    df = bluebook.iloc[:,:]
+    df['geom'] = ''
+
+    # convert x y coordinates to geometry
+    SQL = f'''
+            UPDATE {output_table}
+            SET geom = ST_TRANSFORM(ST_SetSRID(ST_MakePoint(x::NUMERIC, y::NUMERIC),2263),4326);
+        '''
     
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
-    exporter(df=df, 
+    exporter_classic(df=df,
              output_table=output_table,  
-             DDL=DDL, 
-             sql=f'UPDATE {output_table} SET geom=ST_SetSRID(geom,4326)')
+             DDL=DDL,
+             sql=SQL)
