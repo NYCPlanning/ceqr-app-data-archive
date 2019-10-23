@@ -6,7 +6,7 @@
         ],
     "outputs": [
         {
-            "output_table": "ceqr_school_buildings.\"2018\"",
+            "output_table": "ceqr_school_buildings.\"test\"",
             "DDL": {
                 "district": "integer",
                 "subdistrict": "integer",
@@ -25,6 +25,8 @@
                 "hc": "integer",
                 "he": "integer",
                 "source": "text",
+                "x": "text",
+                "y": "text",
                 "geom": "geometry(Point,4326)"
             }
         }
