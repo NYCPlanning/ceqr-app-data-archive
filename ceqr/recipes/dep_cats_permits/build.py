@@ -80,6 +80,7 @@ if __name__ == "__main__":
         it = pool.map(geocode, records, 10000)
     
     df = pd.DataFrame(it)
+    df = df[df['geo_grc'] != '71']
     df['geo_address'] = None
     df['geo_longitude'] = pd.to_numeric(df['geo_longitude'], errors='coerce')
     df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
