@@ -1,0 +1,20 @@
+{
+    "inputs": [
+        "dot_traffic_cameras.latest"
+        ],
+    "outputs": [
+        {
+            "output_table" : "dot_traffic_cameras.latest",
+            "DDL": {
+                "content": "text",
+                "icon": "text",
+                "id": "text",
+                "latitude": "double precision",
+                "longitude": "double precision",
+                "title": "text",
+                "url": "text",
+                "geom": "geometry(Point,4326)"
+            }
+        }
+    ]
+}

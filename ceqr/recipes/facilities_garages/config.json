@@ -1,0 +1,49 @@
+{
+    "inputs": [
+        "facilities.\"2019/09/23\""
+        ],
+    "outputs": [
+        {
+            "output_table" : "facilities_garages.latest",
+            "DDL": {
+                "facname":"text",
+                "geo_housenum":"text",
+                "geo_streetname":"text",
+                "geo_address":"text",
+                "city":"text",
+                "zipcode":"text",
+                "borough":"text",
+                "borocode":"integer",
+                "geo_bin":"text",
+                "geo_bbl":"double precision",
+                "geo_commboard":"text",
+                "geo_nta":"text",
+                "geo_council":"text",
+                "geo_schooldist":"text",
+                "geo_policeprct":"text",
+                "geo_censtract":"text",
+                "factype":"text",
+                "facsubgrp":"text",
+                "facgroup":"text",
+                "facdomain":"text",
+                "servarea":"text",
+                "opname":"text",
+                "opabbrev":"text",
+                "optype":"text",
+                "overagency":"text",
+                "overabbrev":"text",
+                "overlevel":"text",
+                "capacity":"text",
+                "captype":"text",
+                "proptype":"text",
+                "geo_latitude": "double precision",
+                "geo_longitude": "double precision",
+                "geo_xcoord":"double precision",
+                "geo_ycoord":"double precision",
+                "datasource":"text",
+                "uid":"text",
+                "geom": "geometry(Point,4326)"
+            }
+        }
+    ]
+}
