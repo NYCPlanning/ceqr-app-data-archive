@@ -15,7 +15,7 @@
                 "borough":"text",
                 "borocode":"integer",
                 "geo_bin":"text",
-                "geo_bbl":"double precision",
+                "geo_bbl":"bigint",
                 "geo_commboard":"text",
                 "geo_nta":"text",
                 "geo_council":"text",

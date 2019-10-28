@@ -1,0 +1,14 @@
+{
+    "inputs": [
+        "dcp_areas_of_concern.latest"
+        ],
+    "outputs": [
+        {
+            "output_table" : "dcp_areas_of_concern.latest",
+            "DDL": {
+                "name": "text",
+                "geom": "geometry(MultiPolygon,4326)"
+            }
+        }
+    ]
+}

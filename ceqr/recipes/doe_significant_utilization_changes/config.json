@@ -6,14 +6,14 @@
         {
             "output_table" : "doe_significant_utilization_changes.\"072019\"",
             "DDL": {
-                "bldg_id": "character varying",
-                "org_id": "character varying",
-                "bldg_id_additional": "character varying",
-                "title": "character varying",
-                "at_scale_year": "character varying",
-                "url": "character varying",
+                "bldg_id": "text",
+                "org_id": "text",
+                "bldg_id_additional": "text",
+                "title": "text",
+                "at_scale_year": "text",
+                "url": "text",
                 "at_scale_enroll": "integer",
-                "vote_date": "character varying"
+                "vote_date": "date"
             }
         }
     ]

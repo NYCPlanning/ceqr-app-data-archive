@@ -1,10 +1,10 @@
 {
     "inputs": [
-        "nysdot_traffic.latest"
+        "nysdot_traffic.\"2017\""
         ],
     "outputs": [
         {
-            "output_table" : "nysdot_traffic_counts.latest",
+            "output_table" : "nysdot_traffic_counts.\"2017\"",
             "DDL": {
                 "rc_station": "text",
                 "count_stats_id": "text",

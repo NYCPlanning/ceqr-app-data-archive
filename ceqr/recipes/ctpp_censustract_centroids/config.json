@@ -10,7 +10,7 @@
             "output_table": "ctpp_censustract_centroids.\"2006_2010\"",
             "DDL":{
                 "geoid": "character varying",
-                "centroid": "geometry(Point,4326)"
+                "geom": "geometry(Point,4326)"
             }
         }
     ]

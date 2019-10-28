@@ -1,6 +1,6 @@
 from ceqr.helper.engines import recipe_engine, edm_engine
 from ceqr.helper.config_loader import load_config
-from ceqr.helper.exporter import exporter
+from ceqr.helper.exporter import exporter_classic
 from pathlib import Path
 import os
 import datetime
@@ -75,4 +75,4 @@ if __name__ == "__main__":
     df = pd.merge(df_util, df_url, how='outer', left_on='join_key', right_on='join_key')
 
     # export table to EDM_DATA
-    exporter(df, output_table, DDL)
+    exporter_classic(df, output_table, DDL)
