@@ -27,7 +27,7 @@
                 "geo_housenum": "text",
                 "geo_streetname": "text",
                 "geo_address": "text",
-                "geo_bbl": "text",
+                "geo_bbl": "double precision",
                 "geo_bin": "text",
                 "geo_latitude": "double precision",
                 "geo_longitude": "double precision",

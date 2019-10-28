@@ -1,0 +1,39 @@
+{
+    "inputs": [
+        "nysdec_air_monitoring_stations.latest"
+        ],
+    "outputs": [
+        {
+            "output_table" : "nysdec_air_monitoring_stations.latest",
+            "DDL": {
+                "site_id": "text",
+                "monitor_type": "text",
+                "borocode": "integer",
+                "county": "text",
+                "site_name": "text",
+                "air_quality_system_id": "text",
+                "latitude": "double precision",
+                "longitude": "double precision",
+                "ozone": "text",
+                "so2": "text",
+                "nox": "text",
+                "co": "text",
+                "pm_2.5": "text",
+                "cpm_2.5": "text",
+                "pm_10": "text",
+                "cpm_10": "text",
+                "lead": "text",
+                "speciation": "text",
+                "continuous_speciation": "text",
+                "metals": "text",
+                "toxics": "text",
+                "carbonyls": "text",
+                "acid_rain": "text",
+                "pams": "text",
+                "mercury": "text",
+                "location": "text",
+                "geom": "geometry(Point,4326)"
+            }
+        }
+    ]
+}
