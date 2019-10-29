@@ -9,10 +9,10 @@ import os
 
 def get_borocode(c):
     borocode = {
-        "New York": 1, 
-        "Kings": 2, 
-        "Bronx": 3, 
-        "Queens": 4, 
+        "New York": 1,
+        "Bronx": 2,
+        "Kings": 3,
+        "Queens": 4,
         "Richmond": 5
     }
     return borocode.get(c, '')

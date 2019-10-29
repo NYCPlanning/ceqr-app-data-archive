@@ -7,16 +7,6 @@ import numpy as np
 import geopandas as gpd
 import os
 
-def get_borocode(c):
-    borocode = {
-        "New York": 1, 
-        "Kings": 2, 
-        "Bronx": 3, 
-        "Queens": 4, 
-        "Richmond": 5
-    }
-    return borocode.get(c, '')
-
 if __name__ == "__main__":
     # Load configuration
     config = load_config(Path(__file__).parent/'config.json')

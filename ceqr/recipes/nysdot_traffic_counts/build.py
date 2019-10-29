@@ -9,10 +9,10 @@ import os
 
 def get_borocode(c):
     borocode = {
-        "061": 1, 
-        "047": 2, 
-        "005": 3, 
-        "081": 4, 
+        "061": 1,
+        "005": 2,
+        "047": 3,
+        "081": 4,
         "085": 5
     }
     return borocode.get(c, '')
