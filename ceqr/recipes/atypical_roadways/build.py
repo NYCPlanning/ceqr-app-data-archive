@@ -25,6 +25,7 @@ if __name__ == "__main__":
         WHERE ((nodelevelf!= 'M' AND nodelevelf!= '*' AND nodelevelf!= '$')
         OR (nodelevelt!= 'M' AND nodelevelt!= '*' AND nodelevelt!= '$'))
         AND trafdir != 'P'
+        AND featuretyp != '1'
         AND (nullif(number_total_lanes, '  ')::NUMERIC != 1
         OR nullif(number_total_lanes, '  ')::NUMERIC IS NULL)
         AND trim(bikelane) != '1'
