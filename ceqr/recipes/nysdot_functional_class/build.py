@@ -34,7 +34,6 @@ if __name__ == "__main__":
     
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
-    
     exporter(df=df,
              output_table=output_table,
              DDL=DDL,

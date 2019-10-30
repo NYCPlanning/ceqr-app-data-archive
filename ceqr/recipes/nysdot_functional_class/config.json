@@ -2,7 +2,6 @@
     "inputs": [
         "nysdot_functional_class.latest",
         "dcp_boroboundaries_wi.latest"
-
         ],
     "outputs": [
         {
