@@ -11,16 +11,30 @@ if __name__ == "__main__":
     # Load configuration
     config = load_config(Path(__file__).parent/'config.json')
     input_table = config['inputs'][0]
+    input_boundary = config['inputs'][1]
     output_table = config['outputs'][0]['output_table']
     DDL = config['outputs'][0]['DDL']
-
+    
+    import_sql = f'''
+            SELECT *, municipality_desc AS borough, wkb_geometry AS geom
+            FROM {input_table} c
+            WHERE wkb_geometry IS NOT NULL AND
+            c.ogc_fid IN (
+                SELECT a.ogc_fid FROM
+                {input_table} a, (
+                    SELECT ST_Union(wkb_geometry) As wkb_geometry
+                    FROM {input_boundary}
+                ) b
+                WHERE ST_Contains(b.wkb_geometry, a.wkb_geometry)
+                OR ST_Intersects(b.wkb_geometry, a.wkb_geometry)
+            );
+    '''
     # import data
-    df = gpd.GeoDataFrame.from_postgis(f'SELECT *, municipality_desc AS borough, \
-                                        wkb_geometry AS geom FROM {input_table}', 
-                                            con=recipe_engine, geom_col='geom')
-
+    df = gpd.GeoDataFrame.from_postgis(import_sql, con=recipe_engine, geom_col='geom')
+    
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
+    
     exporter(df=df,
              output_table=output_table,
              DDL=DDL,

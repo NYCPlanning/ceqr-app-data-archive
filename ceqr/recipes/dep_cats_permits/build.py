@@ -60,12 +60,23 @@ def clean_street(s):
 if __name__ == "__main__":
     # Load configuration
     config = load_config(Path(__file__).parent/'config.json')
-    input_table_state = config['inputs'][0]
+    input_table = config['inputs'][0]
     output_table = config['outputs'][0]['output_table']
     DDL = config['outputs'][0]['DDL']
+    output_table2 = config['outputs'][1]['output_table']
+    DDL2 = config['outputs'][1]['DDL']
+
+    import_sql =f'''
+    SELECT * FROM {input_table}
+    WHERE status !~* 'CANCELLED'
+    AND LEFT(applicationid, 1) != 'G'
+    AND (LEFT(applicationid, 2) != 'CA' OR (requesttype != 'REGISTRATION' AND requesttype != 'REGISTRATION INSPECTION'))
+    AND (LEFT(applicationid, 2) != 'CA' OR requesttype != 'WORK PERMIT' OR requesttype != 'EXPIRED')
+    ;
+    '''
 
     # import data
-    df = pd.read_sql(f'''SELECT * FROM {input_table_state}''', con=recipe_engine)
+    df = pd.read_sql(import_sql, con=recipe_engine)
     df['borough'] = df.borough.apply(lambda x: clean_boro(x))
     df.rename(columns={"house": "housenum", "street": "streetname",
                        "issuedate": "issue_date", "expirationdate": 'expiration_date'}, inplace=True)
@@ -86,18 +97,11 @@ if __name__ == "__main__":
     df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
     df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.geo_longitude, df.geo_latitude))
     df['geom'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
+    df['geo_bbl'] = df.geo_bbl.apply(lambda x: None if (x == '0000000000')|(x == '') else x)
 
     SQL = f'''
-            UPDATE {output_table} SET geom=ST_SetSRID(geom,4326);
-         
-            DELETE FROM {output_table} 
-            WHERE status ~* 'CANCELLED'
-            OR LEFT(applicationid, 1) = 'G'
-            OR (LEFT(applicationid, 2) = 'CA' AND (requesttype = 'REGISTRATION' OR requesttype = 'REGISTRATION INSPECTION'))
-            OR (LEFT(applicationid, 2) = 'CA' AND requesttype = 'WORK PERMIT' AND requesttype = 'EXPIRED')
-            OR geom IS NULL;
-
-            UPDATE {output_table} SET geo_address=geo_housenum||' '||geo_streetname;
+            UPDATE {output_table} SET geom=ST_SetSRID(geom,4326),
+                                      geo_address=geo_housenum||' '||geo_streetname;
 
             DELETE FROM {output_table}
             WHERE requestid::NUMERIC NOT IN(
@@ -111,11 +115,37 @@ if __name__ == "__main__":
             WHERE p.geo_address = d.geo_address
             AND p.expiration_date = d.latest_date
             GROUP BY p.geo_address
-            );
+            )
+            OR geom IS NULL;
             '''
 
+    SQL2 = f'''
+            UPDATE {output_table2} SET geom=ST_SetSRID(geom,4326),
+                                       geo_address=geo_housenum||' '||geo_streetname;
+
+            DELETE FROM {output_table2}
+            WHERE requestid::NUMERIC NOT IN(
+                WITH date AS(
+                    SELECT geo_address, MAX(expiration_date) AS latest_date
+                    FROM {output_table2}
+                    GROUP BY geo_address
+                )
+            SELECT MAX(requestid::NUMERIC) as requestid
+            FROM {output_table2} p, date d
+            WHERE p.geo_address = d.geo_address
+            AND p.expiration_date = d.latest_date
+            GROUP BY p.geo_address
+            )
+            OR geom IS NOT NULL;
+            '''
     # export table to EDM_DATA
     exporter_classic(df=df,
             output_table=output_table,
             DDL=DDL,
             sql=SQL)
+
+    # export table to EDM_DATA
+    exporter_classic(df=df,
+            output_table=output_table2,
+            DDL=DDL2,
+            sql=SQL2)

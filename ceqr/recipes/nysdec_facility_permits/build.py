@@ -60,6 +60,8 @@ if __name__ == "__main__":
     input_table_title_v = config['inputs'][1]
     output_table = config['outputs'][0]['output_table']
     DDL = config['outputs'][0]['DDL']
+    output_table2 = config['outputs'][1]['output_table']
+    DDL2 = config['outputs'][1]['DDL']
 
     # import data
     dec_state_facility_permits = pd.read_sql(f'''SELECT *, 'State' AS source FROM {input_table_state}''', con=recipe_engine)
@@ -113,6 +115,32 @@ if __name__ == "__main__":
 
         ALTER TABLE {output_table} DROP COLUMN id;
         '''
+    
+
+    SQL2 = f'''
+        UPDATE {output_table2} SET geo_address=geo_housenum||' '||geo_streetname;
+
+        ALTER TABLE {output_table2}
+        ADD COLUMN id SERIAL PRIMARY KEY;
+
+        DELETE FROM {output_table2}
+        WHERE id NOT IN(
+            WITH date AS(
+                SELECT facility_name||address AS facility, MAX(issue_date::date) as latest_issue_date
+                FROM {output_table2}
+                GROUP BY facility_name||address
+            )
+            SELECT min(id)
+            FROM {output_table2} p, date d
+            WHERE p.facility_name||address = d.facility
+            AND p.issue_date::date = d.latest_issue_date
+            OR d.latest_issue_date IS NULL
+            GROUP BY p.facility_name||address
+        )
+        OR geom IS NOT NULL;
+
+        ALTER TABLE {output_table2} DROP COLUMN id;
+        '''
 
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
@@ -120,5 +148,12 @@ if __name__ == "__main__":
              output_table=output_table,
              DDL=DDL,
              sql=SQL,
+             sep='~',
+             geo_column='geom')
+
+    exporter(df=df,
+             output_table=output_table2,
+             DDL=DDL2,
+             sql=SQL2,
              sep='~',
              geo_column='geom')
