@@ -5,11 +5,8 @@ docker run -it --rm\
             -w /home/ceqr-app-data/\
             sptkl/docker-geosupport:19c bash -c "
             pip install -e .
-            cd ceqr/recipes/nysdec_facility_permits && {
+            cd ceqr/recipes/nysdec_title_v_facility_permits && {
                 pip install -r requirements.txt
                 python build.py
             cd -;}
             "
-# cd $(dirname $0)
-
-# python build.py

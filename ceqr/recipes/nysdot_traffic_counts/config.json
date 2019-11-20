@@ -1,6 +1,7 @@
 {
     "inputs": [
-        "nysdot_traffic.\"2017\""
+        "nysdot_traffic.\"2017\"",
+        "nysdot_aadt.latest"
         ],
     "outputs": [
         {
@@ -73,7 +74,8 @@
                 "exceeding_65": "text",
                 "avg_k_factor": "text",
                 "avg_d_factor": "text",
-                "dd_id": "text"            
+                "dd_id": "text",
+                "geom": "geometry(MultiLineString,4326)"
             }
         }
     ]

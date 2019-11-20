@@ -11,7 +11,7 @@ import os
 import re
 
 def geocode(inputs):
-    hnum = inputs.get('housenum', '')
+    hnum = inputs.get('clean_housenum', '')
     sname = inputs.get('clean_streetname', '')
     borough = inputs.get('borough', '')
 
@@ -35,7 +35,8 @@ def parser(geo):
         geo_bin = geo.get('Building Identification Number (BIN) of Input Address or NAP', ''),
         geo_latitude = geo.get('Latitude', ''),
         geo_longitude = geo.get('Longitude', ''),
-        geo_grc = geo.get('Geosupport Return Code (GRC)', ''),        
+        geo_grc = geo.get('Geosupport Return Code (GRC)', ''),
+        geo_message = geo.get('Message', 'msg err')
     )
 
 def clean_boro(b):
@@ -47,14 +48,24 @@ def clean_boro(b):
         b = b.title()
     return b
 
+def clean_house(s):
+    s = ' ' if s == None else s
+    s = '' if s[0] == '0' else s
+    s = re.sub(r"\([^)]*\)", "", s)\
+        .replace(' - ', '-')\
+        .split("(",maxsplit=1)[0]\
+        .split("/",maxsplit=1)[0]
+    return s
+
 def clean_street(s):
-    if s != None:
-        s = re.sub(r"\([^)]*\)", "", s)\
-            .replace("'","")\
-            .replace("VARIOUS","")\
-            .replace("LOCATIONS","")\
-            .split("(",maxsplit=1)[0]\
-            .split("/",maxsplit=1)[0]
+    s = '' if s == None else s
+    s = 'JFK INTERNATIONAL AIRPORT' if 'JFK' in s else s
+    s = re.sub(r"\([^)]*\)", "", s)\
+        .replace("'","")\
+        .replace("VARIOUS","")\
+        .replace("LOCATIONS","")\
+        .split("(",maxsplit=1)[0]\
+        .split("/",maxsplit=1)[0]
     return s
 
 if __name__ == "__main__":
@@ -66,23 +77,17 @@ if __name__ == "__main__":
     output_table2 = config['outputs'][1]['output_table']
     DDL2 = config['outputs'][1]['DDL']
 
-    import_sql =f'''
-    SELECT * FROM {input_table}
-    WHERE status !~* 'CANCELLED'
-    AND LEFT(applicationid, 1) != 'G'
-    AND (LEFT(applicationid, 2) != 'CA' OR (requesttype != 'REGISTRATION' AND requesttype != 'REGISTRATION INSPECTION'))
-    AND (LEFT(applicationid, 2) != 'CA' OR requesttype != 'WORK PERMIT' OR requesttype != 'EXPIRED')
-    ;
-    '''
-
     # import data
-    df = pd.read_sql(import_sql, con=recipe_engine)
-    df['borough'] = df.borough.apply(lambda x: clean_boro(x))
+    df = pd.read_sql(f'SELECT * FROM {input_table}', con=recipe_engine)
     df.rename(columns={"house": "housenum", "street": "streetname",
                        "issuedate": "issue_date", "expirationdate": 'expiration_date'}, inplace=True)
-
-    # # remove strings within "() and "'"
+    df['borough'] = df.borough.apply(lambda x: clean_boro(x))
+    df['borough'] = np.where((df.streetname.str.contains('JFK'))&(df.borough == None),'Queens',df.borough)
+    df['clean_housenum'] = df.housenum.apply(lambda x: clean_house(x))
     df['clean_streetname'] = df.streetname.apply(lambda x: clean_street(x))
+    df['address'] = df.clean_housenum + ' ' + df.clean_streetname
+    df['clean_housenum'] = df.address.apply(get_hnum)
+    df['clean_streetname'] = df.address.apply(get_sname)
     # geocoding ... with 1E
     records = df.to_dict('records')
 
@@ -102,41 +107,15 @@ if __name__ == "__main__":
     SQL = f'''
             UPDATE {output_table} SET geom=ST_SetSRID(geom,4326),
                                       geo_address=geo_housenum||' '||geo_streetname;
-
             DELETE FROM {output_table}
-            WHERE requestid::NUMERIC NOT IN(
-                WITH date AS(
-                    SELECT geo_address, MAX(expiration_date) AS latest_date
-                    FROM {output_table}
-                    GROUP BY geo_address
-                )
-            SELECT MAX(requestid::NUMERIC) as requestid
-            FROM {output_table} p, date d
-            WHERE p.geo_address = d.geo_address
-            AND p.expiration_date = d.latest_date
-            GROUP BY p.geo_address
-            )
-            OR geom IS NULL;
+            WHERE geom IS NULL;
             '''
 
     SQL2 = f'''
             UPDATE {output_table2} SET geom=ST_SetSRID(geom,4326),
                                        geo_address=geo_housenum||' '||geo_streetname;
-
             DELETE FROM {output_table2}
-            WHERE requestid::NUMERIC NOT IN(
-                WITH date AS(
-                    SELECT geo_address, MAX(expiration_date) AS latest_date
-                    FROM {output_table2}
-                    GROUP BY geo_address
-                )
-            SELECT MAX(requestid::NUMERIC) as requestid
-            FROM {output_table2} p, date d
-            WHERE p.geo_address = d.geo_address
-            AND p.expiration_date = d.latest_date
-            GROUP BY p.geo_address
-            )
-            OR geom IS NOT NULL;
+            WHERE geom IS NOT NULL;
             '''
     # export table to EDM_DATA
     exporter_classic(df=df,

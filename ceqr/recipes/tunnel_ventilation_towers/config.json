@@ -8,6 +8,7 @@
             "DDL": {
                 "name": "text",
                 "address": "text",
+                "link": "text",
                 "geom": "geometry(Point,4326)"
             }
         }

@@ -44,6 +44,7 @@ def parser(geo):
         geo_latitude = geo.get('Latitude', ''),
         geo_longitude = geo.get('Longitude', ''),
         geo_grc = geo.get('Geosupport Return Code (GRC)', ''),
+        geo_message = geo.get('Message', 'msg err')
     )
 
 def clean_address(x):
@@ -56,23 +57,23 @@ def clean_address(x):
 if __name__ == "__main__":
     # Load configuration
     config = load_config(Path(__file__).parent/'config.json')
-    input_table_state = config['inputs'][0]
-    input_table_title_v = config['inputs'][1]
+    input_table = config['inputs'][0]
+    input_table_nyc = config['inputs'][1]
     output_table = config['outputs'][0]['output_table']
     DDL = config['outputs'][0]['DDL']
-    output_table2 = config['outputs'][1]['output_table']
-    DDL2 = config['outputs'][1]['DDL']
+    output_table_schema = config['outputs'][0]['output_table'].split('.')[0]
 
     # import data
-    dec_state_facility_permits = pd.read_sql(f'''SELECT *, 'State' AS source FROM {input_table_state}''', con=recipe_engine)
-    dec_title_v_facility_permits = pd.read_sql(f'''SELECT *, 'Title V' AS source FROM {input_table_title_v}''', con=recipe_engine)
-
-    dec_title_v_facility_permits.columns = dec_state_facility_permits.columns
-
-    df = dec_state_facility_permits.append(dec_title_v_facility_permits)
+    df = pd.read_sql(f'''SELECT * FROM {input_table}''', con=recipe_engine)
+    nyc = pd.read_sql(f'''SELECT zipcode, UPPER(city) AS city FROM {input_table_nyc}'''
+                            , con=recipe_engine)
 
     # geocoding ... with 1E
-    df.rename(columns={"facility_zip": "zipcode", "expire_date": "expiration_date"}, inplace=True)
+    df.rename(columns={"facility_zip": "zipcode"}, inplace=True)
+    df['facility_city'] = df.facility_city.apply(lambda x: x.upper() if x != None else '')
+    df = df[(df.facility_city.isin(nyc.city.values))|(df.zipcode.isin(nyc.zipcode.values))|
+                    (df.facility_city == '')|(df.zipcode == '')]
+
     df['address'] = df['facility_location'].apply(lambda x: clean_address(x))
     df['housenum'] = df['address'].apply(get_hnum)\
                                   .apply(lambda x: x.split('/',maxsplit=1)[0] if x != None else x)
@@ -111,35 +112,21 @@ if __name__ == "__main__":
             OR d.latest_issue_date IS NULL
             GROUP BY p.facility_name||address
         )
-        OR geom IS NULL;
+        ;
 
         ALTER TABLE {output_table} DROP COLUMN id;
-        '''
-    
 
-    SQL2 = f'''
-        UPDATE {output_table2} SET geo_address=geo_housenum||' '||geo_streetname;
+        DROP TABLE IF EXISTS {output_table_schema}.geo_rejects;
+        SELECT * INTO {output_table_schema}.geo_rejects
+        FROM {output_table}
+        WHERE geom IS NULL;
 
-        ALTER TABLE {output_table2}
-        ADD COLUMN id SERIAL PRIMARY KEY;
+        DELETE FROM {output_table}
+        WHERE geom IS NULL;
 
-        DELETE FROM {output_table2}
-        WHERE id NOT IN(
-            WITH date AS(
-                SELECT facility_name||address AS facility, MAX(issue_date::date) as latest_issue_date
-                FROM {output_table2}
-                GROUP BY facility_name||address
-            )
-            SELECT min(id)
-            FROM {output_table2} p, date d
-            WHERE p.facility_name||address = d.facility
-            AND p.issue_date::date = d.latest_issue_date
-            OR d.latest_issue_date IS NULL
-            GROUP BY p.facility_name||address
-        )
-        OR geom IS NOT NULL;
-
-        ALTER TABLE {output_table2} DROP COLUMN id;
+        ALTER TABLE {output_table}
+        DROP column geo_grc,
+        DROP COLUMN geo_message;
         '''
 
     os.system('echo "exporting table ..."')
@@ -148,12 +135,5 @@ if __name__ == "__main__":
              output_table=output_table,
              DDL=DDL,
              sql=SQL,
-             sep='~',
-             geo_column='geom')
-
-    exporter(df=df,
-             output_table=output_table2,
-             DDL=DDL2,
-             sql=SQL2,
              sep='~',
              geo_column='geom')

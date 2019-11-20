@@ -63,7 +63,8 @@
                 "geo_latitude": "double precision",
                 "geo_longitude": "double precision",
                 "geom": "geometry(Point,4326)",
-                "geo_grc": "text"
+                "geo_grc": "text",
+                "geo_message": "text"
             }
         }
     ]

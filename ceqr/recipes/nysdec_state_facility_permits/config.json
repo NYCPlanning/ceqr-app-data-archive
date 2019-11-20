@@ -1,0 +1,36 @@
+{
+    "inputs": [
+        "nysdec_state_facility_permits.latest",
+        "zipcode_city_lookup.latest"
+        ],
+    "outputs": [
+        {
+            "output_table" : "nysdec_state_facility_permits.latest",
+            "DDL": {
+                "facility_name": "text",
+                "permit_id": "text",
+                "url_to_permit_text": "text",
+                "facility_location":"text",
+                "address": "text",
+                "housenum": "text",
+                "streetname": "text",
+                "facility_city": "text",
+                "facility_state": "text",
+                "zipcode": "text",
+                "issue_date": "date",
+                "expiration_date": "date",
+                "location": "text",
+                "geo_housenum": "text",
+                "geo_streetname": "text",
+                "geo_address": "text",
+                "geo_bbl": "bigint",
+                "geo_bin": "text",
+                "geo_latitude": "double precision",
+                "geo_longitude": "double precision",
+                "geom": "geometry(Point,4326)",
+                "geo_grc": "text",
+                "geo_message": "text"
+            }
+        }
+    ]
+}
