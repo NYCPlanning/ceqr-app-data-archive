@@ -1,7 +1,7 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter_classic
-from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError, create_geom
+from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError, create_geom, geo_parser
 from multiprocessing import Pool, cpu_count
 import pandas as pd
 import geopandas as gpd
@@ -11,33 +11,24 @@ import os
 import re
 
 def geocode(inputs):
-    hnum = inputs.get('clean_housenum', '')
-    sname = inputs.get('clean_streetname', '')
+    hnum = inputs.get('hnum', '')
+    sname = inputs.get('sname', '')
     borough = inputs.get('borough', '')
 
     hnum = str('' if hnum is None else hnum)
     sname = str('' if sname is None else sname)
     borough = str('' if borough is None else borough)
-    try: 
+    try:
         geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
-    except GeosupportError as e:
-        geo = e.result
-    
-    geo = parser(geo)
+    except GeosupportError:
+        try:
+            geo = g['1B'](street_name=sname, house_number=hnum, borough=borough, mode='tpad')
+        except GeosupportError as e:
+            geo = e.result
+
+    geo = geo_parser(geo)
     geo.update(inputs)
     return geo
-
-def parser(geo): 
-    return dict(
-        geo_housenum = geo.get('House Number - Display Format', ''),
-        geo_streetname = geo.get('First Street Name Normalized', ''),
-        geo_bbl = geo.get('BOROUGH BLOCK LOT (BBL)', {}).get('BOROUGH BLOCK LOT (BBL)', '',),
-        geo_bin = geo.get('Building Identification Number (BIN) of Input Address or NAP', ''),
-        geo_latitude = geo.get('Latitude', ''),
-        geo_longitude = geo.get('Longitude', ''),
-        geo_grc = geo.get('Geosupport Return Code (GRC)', ''),
-        geo_message = geo.get('Message', 'msg err')
-    )
 
 def clean_boro(b):
     if b == 'STATENISLAND':
@@ -83,11 +74,11 @@ if __name__ == "__main__":
                        "issuedate": "issue_date", "expirationdate": 'expiration_date'}, inplace=True)
     df['borough'] = df.borough.apply(lambda x: clean_boro(x))
     df['borough'] = np.where((df.streetname.str.contains('JFK'))&(df.borough == None),'Queens',df.borough)
-    df['clean_housenum'] = df.housenum.apply(lambda x: clean_house(x))
-    df['clean_streetname'] = df.streetname.apply(lambda x: clean_street(x))
-    df['address'] = df.clean_housenum + ' ' + df.clean_streetname
-    df['clean_housenum'] = df.address.apply(get_hnum)
-    df['clean_streetname'] = df.address.apply(get_sname)
+    df['hnum'] = df.housenum.apply(lambda x: clean_house(x))
+    df['sname'] = df.streetname.apply(lambda x: clean_street(x))
+    df['address'] = df.hnum + ' ' + df.sname
+    df['hnum'] = df.address.apply(get_hnum)
+    df['sname'] = df.address.apply(get_sname)
     # geocoding ... with 1E
     records = df.to_dict('records')
 

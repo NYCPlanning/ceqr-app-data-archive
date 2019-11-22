@@ -1,7 +1,7 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter
-from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError, create_geom
+from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError, create_geom, geo_parser
 from multiprocessing import Pool, cpu_count
 from shapely.wkt import loads, dumps
 import pandas as pd
@@ -21,37 +21,24 @@ def geocode(inputs):
 
     try:
         geo = g['1B'](street_name=sname, house_number=hnum, zip_code=zip_code)
-        geo = parser(geo)
-        geo.update(inputs)
-        return geo
     except GeosupportError:
         try:
-            geo = g['AP'](street_name=sname, house_number=hnum, zip_code=zip_code)
-            geo = parser(geo)
-            geo.update(inputs)
-            return geo
-        except GeosupportError as e:
-            geo = parser(e.result)
-            geo.update(inputs)
-            return geo
+            geo = g['1B'](street_name=sname, house_number=hnum, zip_code=zip_code, mode='tpad')
+        except GeosupportError:
+            try:
+                geo = g['AP'](street_name=sname, house_number=hnum, zip_code=zip_code)
+            except GeosupportError as e:
+                geo = e.result
 
-def parser(geo):
-    return dict(
-        geo_housenum = geo.get('House Number - Display Format', ''),
-        geo_streetname = geo.get('First Street Name Normalized', ''),
-        geo_bbl = geo.get('BOROUGH BLOCK LOT (BBL)', {}).get('BOROUGH BLOCK LOT (BBL)', '',),
-        geo_bin = geo.get('Building Identification Number (BIN) of Input Address or NAP', ''),
-        geo_latitude = geo.get('Latitude', ''),
-        geo_longitude = geo.get('Longitude', ''),
-        geo_grc = geo.get('Geosupport Return Code (GRC)', ''),
-        geo_message = geo.get('Message', 'msg err')
-    )
+    geo = geo_parser(geo)
+    geo.update(inputs)
+    return geo
 
 def clean_address(x):
-    if x != None:
-        sep = ['|', '&', '@', ' AND ']
-        for i in sep:
-            x = x.split(i, maxsplit=1)[0]
+    x = '' if x is None else x
+    sep = ['|', '&', '@', ' AND ']
+    for i in sep:
+        x = x.split(i, maxsplit=1)[0]
     return x
 
 if __name__ == "__main__":
@@ -125,7 +112,9 @@ if __name__ == "__main__":
         WHERE geom IS NULL;
 
         ALTER TABLE {output_table}
-        DROP column geo_grc,
+        DROP COLUMN geo_grc,
+        DROP COLUMN geo_grc2,
+        DROP COLUMN geo_reason_code,
         DROP COLUMN geo_message;
         '''
 
