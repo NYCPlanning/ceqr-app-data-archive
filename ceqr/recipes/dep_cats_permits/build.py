@@ -14,19 +14,39 @@ def geocode(inputs):
     hnum = inputs.get('hnum', '')
     sname = inputs.get('sname', '')
     borough = inputs.get('borough', '')
+    street_name_1 = inputs.get('streetname_1', '')
+    street_name_2 = inputs.get('streetname_2', '')
 
     hnum = str('' if hnum is None else hnum)
     sname = str('' if sname is None else sname)
     borough = str('' if borough is None else borough)
+    street_name_1 = str('' if street_name_1 is None else street_name_1)
+    street_name_2 = str('' if street_name_2 is None else street_name_2)
+
     try:
         geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
+        geo = geo_parser(geo)
+        geo.update(dict(geo_function='1B'))
     except GeosupportError:
         try:
             geo = g['1B'](street_name=sname, house_number=hnum, borough=borough, mode='tpad')
-        except GeosupportError as e:
-            geo = e.result
+            geo = geo_parser(geo)
+            geo.update(dict(geo_function='1B-tpad'))
+        except GeosupportError:
+            try:
+                if street_name_1 != '':
+                    geo = g['2'](street_name_1=street_name_1, street_name_2=street_name_2, borough_code=borough)
+                    geo = geo_parser(geo)
+                    geo.update(dict(geo_function='Intersection'))
+                else:
+                    geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
+                    geo = geo_parser(geo)
+                    geo.update(dict(geo_function='1B'))
+            except GeosupportError as e:
+                geo = e.result
+                geo = geo_parser(geo)
+                geo.update(dict(geo_function=''))
 
-    geo = geo_parser(geo)
     geo.update(inputs)
     return geo
 
@@ -35,7 +55,7 @@ def clean_boro(b):
         b = 'STATEN ISLAND'
     if b not in ['BRONX', 'MANHATTAN', 'BROOKLYN', 'QUEENS', 'STATEN ISLAND']:
         b = None
-    if b != None: 
+    if b != None:
         b = b.title()
     return b
 
@@ -59,6 +79,13 @@ def clean_street(s):
         .split("/",maxsplit=1)[0]
     return s
 
+def clean_streetname(x, n):
+    x = '' if x is None else x
+    if ('&' in x)|(' AND ' in x.upper()):
+        x = re.split('&| AND | and ',x)[n]
+    else: x = ''
+    return x
+
 if __name__ == "__main__":
     # Load configuration
     config = load_config(Path(__file__).parent/'config.json')
@@ -79,7 +106,10 @@ if __name__ == "__main__":
     df['address'] = df.hnum + ' ' + df.sname
     df['hnum'] = df.address.apply(get_hnum)
     df['sname'] = df.address.apply(get_sname)
-    # geocoding ... with 1E
+
+    df['streetname_1'] = df['address'].apply(lambda x: clean_streetname(x, 0)).apply(get_sname)
+    df['streetname_2'] = df['address'].apply(lambda x: clean_streetname(x, -1)).apply(get_sname)
+    # geocoding
     records = df.to_dict('records')
 
     # Multiprocess
@@ -98,6 +128,21 @@ if __name__ == "__main__":
     SQL = f'''
             UPDATE {output_table} SET geom=ST_SetSRID(geom,4326),
                                       geo_address=geo_housenum||' '||geo_streetname;
+            UPDATE {output_table} SET geom = (CASE
+                                            WHEN geo_function = 'Intersection'
+                                            THEN ST_TRANSFORM(ST_SetSRID(ST_MakePoint(geo_x_coord::NUMERIC,geo_y_coord::NUMERIC),2263),4326)::TEXT
+                                            ELSE geom
+                                        END),
+                                    geo_x_coord = (CASE
+                                                    WHEN geo_x_coord = ''
+                                                    THEN NULL
+                                                    ELSE geo_x_coord
+                                                END),
+                                    geo_y_coord = (CASE
+                                                    WHEN geo_y_coord = ''
+                                                    THEN NULL
+                                                    ELSE geo_y_coord
+                                                END);
             DELETE FROM {output_table}
             WHERE geom IS NULL;
             '''
@@ -105,6 +150,21 @@ if __name__ == "__main__":
     SQL2 = f'''
             UPDATE {output_table2} SET geom=ST_SetSRID(geom,4326),
                                        geo_address=geo_housenum||' '||geo_streetname;
+            UPDATE {output_table2} SET geom = (CASE
+                                        WHEN geo_function = 'Intersection'
+                                        THEN ST_TRANSFORM(ST_SetSRID(ST_MakePoint(geo_x_coord::NUMERIC,geo_y_coord::NUMERIC),2263),4326)::TEXT
+                                        ELSE geom
+                                    END),
+                                geo_x_coord = (CASE
+                                                WHEN geo_x_coord = ''
+                                                THEN NULL
+                                                ELSE geo_x_coord
+                                            END),
+                                geo_y_coord = (CASE
+                                                WHEN geo_y_coord = ''
+                                                THEN NULL
+                                                ELSE geo_y_coord
+                                            END);
             DELETE FROM {output_table2}
             WHERE geom IS NOT NULL;
             '''
