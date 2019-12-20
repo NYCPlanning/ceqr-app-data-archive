@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     # merge two tables and perform column transformation
     df = pd.merge(pct, projections, how='outer', on=['district'])
-    df['multiplier'] = df.multiplier.astype(float)
+    df['multiplier'] = df.multiplier.apply(lambda x: float(x[:-1])/100).astype(float)
     df['school_year'] = df.school_year.apply(lambda x: x[:4])
     df['ps'] = df['ps'] * df.multiplier
     df['is'] = df['is'] * df.multiplier
