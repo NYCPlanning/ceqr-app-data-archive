@@ -1,12 +1,12 @@
 {
     "inputs": [
         "doe_lcgms.\"2018\"",
-        "sca_bluebook.\"2018\"",
+        "sca_bluebook.\"2019\"",
         "doe_school_subdistricts.\"2017\""
         ],
     "outputs": [
         {
-            "output_table": "ceqr_school_buildings.\"test\"",
+            "output_table": "ceqr_school_buildings.\"2019\"",
             "DDL": {
                 "district": "integer",
                 "subdistrict": "integer",
@@ -25,8 +25,6 @@
                 "hc": "integer",
                 "he": "integer",
                 "source": "text",
-                "x": "text",
-                "y": "text",
                 "geom": "geometry(Point,4326)"
             }
         }

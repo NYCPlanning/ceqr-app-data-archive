@@ -1,6 +1,6 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
-from ceqr.helper.exporter import exporter_classic
+from ceqr.helper.exporter import exporter
 import pandas as pd
 import geopandas as gpd
 from pathlib import Path
@@ -30,7 +30,9 @@ if __name__ == "__main__":
     DDL = config['outputs'][0]['DDL']
 
     # import data
-    bluebook = pd.read_sql(f'''SELECT *, 'bluebook' AS source FROM {input_table_bluebook}''', con=recipe_engine)
+    bluebook = gpd.GeoDataFrame.from_postgis(f'''SELECT *, 'bluebook' AS source, \
+                                                ST_TRANSFORM(ST_SetSRID(ST_MakePoint(x::NUMERIC, y::NUMERIC),2263),4326) AS geom \
+                                                FROM {input_table_bluebook}''', con=recipe_engine, geom_col='geom')
     lcgms = gpd.GeoDataFrame.from_postgis(f'''SELECT *, 'lcgms' AS source FROM {input_table_lcgms}''',
                                                     con=recipe_engine, geom_col='geom')
     doe_school_subdistrict = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_subdistricts}', 
@@ -38,12 +40,23 @@ if __name__ == "__main__":
     
     # perform column transformation for bluebook
     bluebook = bluebook[bluebook.org_level.isin(['PS','IS','HS','PSIS','ISHS'])]
-    bluebook.rename(columns={'subd': 'subdistrict', 'bldg_excl.': 'excluded', 'organization_name':'name'}, inplace = True)
+    bluebook['bldg_excl.'] = None
+    bluebook.rename(columns={'bldg_excl.': 'excluded', 'organization_name':'name'}, inplace = True)
     bluebook['excluded'] = bluebook.excluded.apply(lambda x: True if x == 'Y' else False)
     bluebook['org_e'] = bluebook['org_e'].astype(float)
+    bluebook['ps_%'] = bluebook['ps_%'].apply(lambda x: float(x[:-1])/100).astype(float)
+    bluebook['ms_%'] = bluebook['ms_%'].apply(lambda x: float(x[:-1])/100).astype(float)
     bluebook['hs_%'] = bluebook['hs_%'].apply(lambda x: float(x[:-1])/100).astype(float)
+    bluebook['pc'] = bluebook['pc'].fillna(0).astype(float).astype(int)
+    bluebook['ic'] = bluebook['ic'].fillna(0).astype(float).astype(int)
+    bluebook['hc'] = bluebook['hc'].fillna(0).astype(float).astype(int)
+    bluebook['pe'] = bluebook.org_e * bluebook['ps_%']
+    bluebook['pe'] = bluebook['pe'].fillna(0).astype(int)
+    bluebook['ie'] = bluebook.org_e * bluebook['ms_%']
+    bluebook['ie'] = bluebook['ie'].fillna(0).astype(int)
     bluebook['he'] = bluebook.org_e * bluebook['hs_%']
     bluebook['he'] = bluebook['he'].fillna(0).astype(int)
+    bluebook = gpd.sjoin(bluebook, doe_school_subdistrict[['district','subdistrict','geom']], op='within')
     bluebook['borocode'] = bluebook.district.apply(lambda x: get_boro(x))
 
     # # only keep the records from lcgms not existing in bluebook
@@ -63,7 +76,6 @@ if __name__ == "__main__":
 
     # # merge lcgms and bluebook
     df = bluebook.iloc[:,:]
-    df['geom'] = ''
 
     # convert x y coordinates to geometry
     SQL = f'''
@@ -73,7 +85,9 @@ if __name__ == "__main__":
     
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
-    exporter_classic(df=df,
+    exporter(df=df,
              output_table=output_table,  
              DDL=DDL,
-             sql=SQL)
+             sep='~',
+             geo_column='geom')
+    # print(df.columns)
