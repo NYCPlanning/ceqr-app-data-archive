@@ -40,8 +40,8 @@ if __name__ == "__main__":
     
     # perform column transformation for bluebook
     bluebook = bluebook[bluebook.org_level.isin(['PS','IS','HS','PSIS','ISHS'])]
-    bluebook['bldg_excl.'] = None
     bluebook.rename(columns={'bldg_excl.': 'excluded', 'organization_name':'name'}, inplace = True)
+    bluebook['borocode'] = bluebook.district.apply(lambda x: get_boro(x))
     bluebook['excluded'] = bluebook.excluded.apply(lambda x: True if x == 'Y' else False)
     bluebook['org_e'] = bluebook['org_e'].astype(float)
     bluebook['ps_%'] = bluebook['ps_%'].apply(lambda x: float(x[:-1])/100).astype(float)
@@ -56,8 +56,6 @@ if __name__ == "__main__":
     bluebook['ie'] = bluebook['ie'].fillna(0).astype(int)
     bluebook['he'] = bluebook.org_e * bluebook['hs_%']
     bluebook['he'] = bluebook['he'].fillna(0).astype(int)
-    bluebook = gpd.sjoin(bluebook, doe_school_subdistrict[['district','subdistrict','geom']], op='within')
-    bluebook['borocode'] = bluebook.district.apply(lambda x: get_boro(x))
 
     # # only keep the records from lcgms not existing in bluebook
     # lcgms = lcgms[~(lcgms.org_id+lcgms.bldg_id).isin(bluebook.org_id+bluebook.bldg_id)]
@@ -76,12 +74,6 @@ if __name__ == "__main__":
 
     # # merge lcgms and bluebook
     df = bluebook.iloc[:,:]
-
-    # convert x y coordinates to geometry
-    SQL = f'''
-            UPDATE {output_table}
-            SET geom = ST_TRANSFORM(ST_SetSRID(ST_MakePoint(x::NUMERIC, y::NUMERIC),2263),4326);
-        '''
     
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
@@ -90,4 +82,3 @@ if __name__ == "__main__":
              DDL=DDL,
              sep='~',
              geo_column='geom')
-    # print(df.columns)
