@@ -33,7 +33,7 @@ if __name__ == "__main__":
                                                 FROM {input_table_lcgms} a, {input_table_boro} b\
                                                 WHERE ST_Within(ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326),\
                                                     b.wkb_geometry)\
-                                                AND latitude !~* '^0'\
+                                                AND geographical_district_code !~* '00'\
                                                 AND building_code||location_code NOT IN (\
                                                     SELECT DISTINCT bldg_id||org_id\
                                                     FROM {input_table_bluebook}\
