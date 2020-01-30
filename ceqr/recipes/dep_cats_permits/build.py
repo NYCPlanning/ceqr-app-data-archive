@@ -79,10 +79,10 @@ def clean_street(s):
         .split("/",maxsplit=1)[0]
     return s
 
-def clean_streetname(x, n):
+def parse_streetname(x, n):
     x = '' if x is None else x
-    if ('&' in x)|(' AND ' in x.upper()):
-        x = re.split('&| AND | and ',x)[n]
+    if ('&' in x)|(' AND ' in x.upper())|('CROSS' in x.upper())|('CRS' in x.upper()):
+        x = re.split('&| AND | and |CROSS|CRS',x)[n]
     else: x = ''
     return x
 
@@ -107,8 +107,8 @@ if __name__ == "__main__":
     df['hnum'] = df.address.apply(get_hnum)
     df['sname'] = df.address.apply(get_sname)
 
-    df['streetname_1'] = df['address'].apply(lambda x: clean_streetname(x, 0)).apply(get_sname)
-    df['streetname_2'] = df['address'].apply(lambda x: clean_streetname(x, -1)).apply(get_sname)
+    df['streetname_1'] = df['address'].apply(lambda x: parse_streetname(x, 0)).apply(get_sname)
+    df['streetname_2'] = df['address'].apply(lambda x: parse_streetname(x, -1)).apply(get_sname)
     # geocoding
     records = df.to_dict('records')
 

@@ -1,4 +1,5 @@
 REPOLOC="$(git rev-parse --show-toplevel)"
+START=$(date +%s);
 
 docker run -it --rm\
             -v $REPOLOC:/home/ceqr-app-data\
@@ -10,3 +11,6 @@ docker run -it --rm\
                 python build.py
             cd -;}
             "
+
+END=$(date +%s);
+echo $((END-START)) | awk '{print int($1/60)" minutes and "int($1%60)" seconds elapsed."}'
