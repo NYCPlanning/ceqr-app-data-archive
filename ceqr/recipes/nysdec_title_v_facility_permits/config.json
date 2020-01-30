@@ -1,7 +1,8 @@
 {
     "inputs": [
         "nysdec_title_v_facility_permits.latest",
-        "zipcode_city_lookup.latest"
+        "zipcode_city_lookup.latest",
+        "zipcode_borough_lookup.latest"
         ],
     "outputs": [
         {
@@ -14,8 +15,11 @@
                 "address": "text",
                 "housenum": "text",
                 "streetname": "text",
+                "streetname_1": "text",
+                "streetname_2": "text",
                 "facility_city": "text",
                 "facility_state": "text",
+                "borough": "text",
                 "zipcode": "text",
                 "issue_date": "date",
                 "expiration_date": "date",
@@ -27,6 +31,9 @@
                 "geo_bin": "text",
                 "geo_latitude": "double precision",
                 "geo_longitude": "double precision",
+                "geo_x_coord": "double precision",
+                "geo_y_coord": "double precision",
+                "geo_function": "text",
                 "geom": "geometry(Point,4326)",
                 "geo_grc": "text",
                 "geo_grc2": "text",
