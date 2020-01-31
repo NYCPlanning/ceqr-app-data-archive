@@ -10,44 +10,84 @@ import os
 if __name__ == "__main__":
     # Load configuration
     config = load_config(Path(__file__).parent/'config.json')
-    input_table_lcgms = config['inputs'][0]
-    input_table_bluebook = config['inputs'][1]
+    input_table_bluebook = config['inputs'][0]
+    input_table_lcgms = config['inputs'][1]
     input_table_subdistricts = config['inputs'][2]
+    input_table_boro = config['inputs'][3]
     output_table = config['outputs'][0]['output_table']
     DDL = config['outputs'][0]['DDL']
 
     # import data
-    sca_bluebook = pd.read_sql(f'SELECT * FROM {input_table_bluebook}', con=recipe_engine)
-    doe_lcgms = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_lcgms}', 
-                                                    con=recipe_engine, geom_col='geom')
-    doe_school_subdistrict = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_subdistricts}', 
-                                                    con=ceqr_engine, geom_col='geom')
-    # add source column
-    doe_lcgms['source'] = 'lcgms'
-    sca_bluebook['source'] = 'bluebook'
+    bluebook = gpd.GeoDataFrame.from_postgis(f'''
+                                                SELECT a.*, b.borocode, 'bluebook' AS source,\
+                                                ST_TRANSFORM(ST_SetSRID(ST_MakePoint(a.x::NUMERIC, a.y::NUMERIC),2263),4326) AS geom\
+                                                FROM {input_table_bluebook} a, {input_table_boro} b\
+                                                WHERE ST_Within(ST_TRANSFORM(ST_SetSRID(ST_MakePoint(a.x::NUMERIC, a.y::NUMERIC),2263),4326),\
+                                                    b.wkb_geometry)\
+                                                AND a.org_id IS NOT NULL\
+                                                ''', con=recipe_engine, geom_col='geom')
 
-    # only keep the records from doe_lcgms not existing in sca_bluebook
-    doe_lcgms = doe_lcgms[~(doe_lcgms.org_id+doe_lcgms.bldg_id).isin(sca_bluebook.org_id+sca_bluebook.bldg_id)]
-
-    # perform spatial join between lcgms and doe_school_subdistrict shapefile
-    doe_lcgms = gpd.sjoin(doe_lcgms, doe_school_subdistrict[['district','subdistrict', 'geom']], op='within')
-    doe_lcgms = pd.DataFrame(doe_lcgms)
-
-    # perform column transformation for doe_lcgms 
-    doe_lcgms['borocode'] = doe_lcgms.bbl.apply(lambda x: str(x)[0]).astype(int)
-    doe_lcgms['bldg_name'] = doe_lcgms.name
-    doe_lcgms['excluded'] = False
-    doe_lcgms['pc'] = 0
-    doe_lcgms['ic'] = 0
-    doe_lcgms['hc'] = 0
+    #load lcgms records, excluding outsideNYC and ones existing in bluebook already
+    lcgms = gpd.GeoDataFrame.from_postgis(f'''SELECT a.*, b.borocode, c.district, c.subdistrict, 'lcgms' AS source,\
+                                                ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326) AS geom\
+                                                FROM {input_table_lcgms} a\
+                                                LEFT JOIN {input_table_boro} b\
+                                                ON ST_Within(ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326),\
+                                                    b.wkb_geometry)\
+                                                LEFT JOIN {input_table_subdistricts} c\
+                                                ON ST_Within(ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326),\
+                                                    c.wkb_geometry)\
+                                                WHERE geographical_district_code !~* '00'\
+                                                AND building_code||location_code NOT IN (\
+                                                    SELECT DISTINCT bldg_id||org_id\
+                                                    FROM sca_bluebook."2019"\
+                                                    WHERE bldg_id||org_id IS NOT NULL)
+                                                ''', con=recipe_engine, geom_col='geom')
     
-    # merge doe_lcgms and sca_bluebook
-    df = sca_bluebook[DDL.keys()].append(doe_lcgms[DDL.keys()])
-    df['geom'] = df.geom.astype('str')
+    ## apply filter
+    # bluebook = bluebook[bluebook.org_level.isin(['PS','IS','HS','PSIS','ISHS'])]
+
+    # perform column transformation for bluebook
+    bluebook.rename(columns={'bldg_excl.': 'excluded', 'organization_name':'name'}, inplace = True)
+    bluebook['excluded'] = bluebook.excluded.apply(lambda x: True if x == 'Y' else False)
+    bluebook['org_e'] = bluebook['org_e'].astype(float)
+    bluebook['ps_%'] = bluebook['ps_%'].apply(lambda x: float(x[:-1])/100 if x != None else None).astype(float)
+    bluebook['ms_%'] = bluebook['ms_%'].apply(lambda x: float(x[:-1])/100 if x != None else None).astype(float)
+    bluebook['hs_%'] = bluebook['hs_%'].apply(lambda x: float(x[:-1])/100 if x != None else None).astype(float)
+    bluebook['pc'] = bluebook['pc'].fillna(0).astype(float).astype(int)
+    bluebook['ic'] = bluebook['ic'].fillna(0).astype(float).astype(int)
+    bluebook['hc'] = bluebook['hc'].fillna(0).astype(float).astype(int)
+    bluebook['pe'] = bluebook.org_e * bluebook['ps_%']
+    bluebook['pe'] = bluebook['pe'].fillna(0).astype(int)
+    bluebook['ie'] = bluebook.org_e * bluebook['ms_%']
+    bluebook['ie'] = bluebook['ie'].fillna(0).astype(int)
+    bluebook['he'] = bluebook.org_e * bluebook['hs_%']
+    bluebook['he'] = bluebook['he'].fillna(0).astype(int)
+
+    # rename the column names
+    lcgms.rename(columns={'building_name':'bldg_name',
+                          'building_id_number_(bin)':'bldg_id',
+                          'location_code':'org_id',
+                          'location_name':'name'}, inplace = True)
+
+    # perform column transformation for lcgms
+    lcgms['excluded'] = False
+    lcgms['pc'] = 0
+    lcgms['ic'] = 0
+    lcgms['hc'] = 0
+    lcgms['pe'] = 0
+    lcgms['ie'] = 0
+    lcgms['he'] = 0
+    lcgms['org_level'] = None
+
+    # merge lcgms and bluebook
+    df = bluebook[DDL.keys()].append(lcgms[DDL.keys()])
+    df['borocode'] = df['borocode'].fillna(0).astype('int')
     
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
-    exporter(df=df, 
+    exporter(df=df,
              output_table=output_table,  
-             DDL=DDL, 
-             sql=f'UPDATE {output_table} SET geom=ST_SetSRID(geom,4326)')
+             DDL=DDL,
+             sep='~',
+             geo_column='geom')

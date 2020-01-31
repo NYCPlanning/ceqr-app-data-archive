@@ -1,12 +1,13 @@
 {
     "inputs": [
-        "doe_lcgms.\"2018\"",
-        "sca_bluebook.\"2018\"",
-        "doe_school_subdistricts.\"2017\""
+        "sca_bluebook.\"2019\"",
+        "doe_lcgms.\"2019\"",
+        "doe_school_subdistricts.\"2017\"",
+        "dcp_boroboundaries_wi.latest"
         ],
     "outputs": [
         {
-            "output_table": "ceqr_school_buildings.\"2018\"",
+            "output_table": "ceqr_school_buildings.\"2019\"",
             "DDL": {
                 "district": "integer",
                 "subdistrict": "integer",
