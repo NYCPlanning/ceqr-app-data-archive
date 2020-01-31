@@ -28,19 +28,21 @@ if __name__ == "__main__":
                                                 ''', con=recipe_engine, geom_col='geom')
 
     #load lcgms records, excluding outsideNYC and ones existing in bluebook already
-    lcgms = gpd.GeoDataFrame.from_postgis(f'''SELECT a.*, b.borocode, 'lcgms' AS source,\
-                                                ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326) AS geom \
-                                                FROM {input_table_lcgms} a, {input_table_boro} b\
-                                                WHERE ST_Within(ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326),\
+    lcgms = gpd.GeoDataFrame.from_postgis(f'''SELECT a.*, b.borocode, c.district, c.subdistrict, 'lcgms' AS source,\
+                                                ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326) AS geom\
+                                                FROM {input_table_lcgms} a\
+                                                LEFT JOIN {input_table_boro} b\
+                                                ON ST_Within(ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326),\
                                                     b.wkb_geometry)\
-                                                AND geographical_district_code !~* '00'\
+                                                LEFT JOIN {input_table_subdistricts} c\
+                                                ON ST_Within(ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326),\
+                                                    c.wkb_geometry)\
+                                                WHERE geographical_district_code !~* '00'\
                                                 AND building_code||location_code NOT IN (\
                                                     SELECT DISTINCT bldg_id||org_id\
-                                                    FROM {input_table_bluebook}\
-                                                    WHERE bldg_id||org_id IS NOT NULL)\
+                                                    FROM sca_bluebook."2019"\
+                                                    WHERE bldg_id||org_id IS NOT NULL)
                                                 ''', con=recipe_engine, geom_col='geom')
-    subdistrict = gpd.GeoDataFrame.from_postgis(f'SELECT * FROM {input_table_subdistricts}',
-                                                    con=ceqr_engine, geom_col='geom')
     
     ## apply filter
     # bluebook = bluebook[bluebook.org_level.isin(['PS','IS','HS','PSIS','ISHS'])]
@@ -63,14 +65,10 @@ if __name__ == "__main__":
     bluebook['he'] = bluebook['he'].fillna(0).astype(int)
 
     # rename the column names
-    lcgms.rename(columns={'geographical_district_code': 'district',
-                          'building_name':'bldg_name',
+    lcgms.rename(columns={'building_name':'bldg_name',
                           'building_id_number_(bin)':'bldg_id',
                           'location_code':'org_id',
                           'location_name':'name'}, inplace = True)
-
-    # perform spatial join between lcgms and doe_school_subdistrict shapefile
-    lcgms = gpd.sjoin(lcgms, subdistrict[['subdistrict', 'geom']], op='within')
 
     # perform column transformation for lcgms
     lcgms['excluded'] = False
@@ -84,6 +82,7 @@ if __name__ == "__main__":
 
     # merge lcgms and bluebook
     df = bluebook[DDL.keys()].append(lcgms[DDL.keys()])
+    df['borocode'] = df['borocode'].fillna(0).astype('int')
     
     os.system('echo "exporting table ..."')
     # export table to EDM_DATA
