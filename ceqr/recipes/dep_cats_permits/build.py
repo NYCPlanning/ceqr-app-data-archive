@@ -95,8 +95,17 @@ if __name__ == "__main__":
     output_table2 = config['outputs'][1]['output_table']
     DDL2 = config['outputs'][1]['DDL']
 
-    # import data
-    df = pd.read_sql(f'SELECT * FROM {input_table}', con=recipe_engine)
+    # import data, apply EARD filter
+    df = pd.read_sql(f'''SELECT * FROM {input_table}
+                            WHERE TRIM(status) != 'CANCELLED'
+                            AND LEFT(applicationid, 1) != 'G'
+                            AND (LEFT(applicationid, 1) != 'C'
+                                OR (requesttype != 'REGISTRATION'
+                                    AND requesttype != 'REGISTRATION INSPECTION'
+                                    AND requesttype != 'BOILER REGISTRATION II'))
+                            AND (LEFT(applicationid, 2) != 'CA'
+                                OR requesttype != 'WORK PERMIT'
+                                OR TRIM(status) != 'EXPIRED');''', con=recipe_engine)
     df.rename(columns={"house": "housenum", "street": "streetname",
                        "issuedate": "issue_date", "expirationdate": 'expiration_date'}, inplace=True)
     df['borough'] = df.borough.apply(lambda x: clean_boro(x))
