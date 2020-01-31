@@ -109,6 +109,7 @@ if __name__ == "__main__":
 
     df['streetname_1'] = df['address'].apply(lambda x: parse_streetname(x, 0)).apply(get_sname)
     df['streetname_2'] = df['address'].apply(lambda x: parse_streetname(x, -1)).apply(get_sname)
+    df['status'] = df['status'].apply(lambda x: x.strip())
     # geocoding
     records = df.to_dict('records')
 
