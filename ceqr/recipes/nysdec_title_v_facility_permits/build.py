@@ -3,6 +3,10 @@ from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter
 from multiprocessing import Pool, cpu_count
+import requests
+from urllib.request import Request, urlopen
+from bs4 import BeautifulSoup
+import ssl
 import pandas as pd
 import geopandas as gpd
 from pathlib import Path
@@ -88,7 +92,7 @@ if __name__ == "__main__":
     corr = corr[corr.datasource==output_table_schema].drop(columns='datasource')
 
     # fill boroughs, update location based on ceqr_input_research
-    df['permit_id'] = df['permit_id'].apply(lambda x: x.strip() if x!=None else x)
+    df['permit_id'] = df['permit_id'].apply(lambda x: x.replace(')','').strip() if x!=None else x)
     df['facility_city'] = df['facility_city'].apply(lambda x: x.upper() if x!=None else x)
     df = pd.merge(df, zip_boro, how = 'left', on = 'zipcode')
     df = pd.merge(df, corr, how = 'left', on =['permit_id','facility_location', 'facility_city'])
@@ -132,6 +136,32 @@ if __name__ == "__main__":
     df['geo_longitude'] = np.where(df.geo_function=='DCP_Manual',None,df.geo_longitude)
     df['geo_latitude'] = np.where(df.geo_function=='DCP_Manual',None,df.geo_latitude)
 
+    ################# webscrape title v permit url###############
+    url= 'http://www.dec.ny.gov/dardata/boss/afs/issued_atv.html'
+    hdr = {'User-Agent': 'Mozilla/5.0'}
+    req = Request(url,headers=hdr)
+    gcontext = ssl.SSLContext()
+    page = urlopen(req, context=gcontext)
+    soup = BeautifulSoup(page, features="html.parser")
+    tb = soup.find('table', class_='dataTable')
+    data = []
+    for info in tb.find_all('td'):
+        row = info.find('a')
+        if row != None:
+            if row.get_text('target')!='PRR':
+                result = {}
+                url_prefix = 'http://www.dec.ny.gov/dardata/boss/afs/'
+                result['permit_id'] = row.get_text('target')
+                result['url'] = url_prefix + row['href']
+                data.append(result)
+    permit_url_lookup = pd.DataFrame.from_dict(data, orient='columns')
+
+    ###################### finalizing ####################
+    # merge url to title v
+    df = pd.merge(df, permit_url_lookup, how = 'left', on = 'permit_id')
+    df['url_to_permit_text'] = np.where(df.url_to_permit_text != df.url, df.url, df.url_to_permit_text)
+
+    # deduping
     SQL = f'''
         UPDATE {output_table} SET geo_address=geo_housenum||' '||geo_streetname,
                                   geom = (CASE
