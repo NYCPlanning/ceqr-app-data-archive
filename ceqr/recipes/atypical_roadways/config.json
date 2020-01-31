@@ -1,0 +1,26 @@
+{
+    "inputs": [
+        "dcp_lion.latest"
+        ],
+    "outputs": [
+        {
+            "output_table" : "atypical_roadways.latest",
+            "DDL": {
+                "streetname": "text",
+                "segmentid": "text",
+                "streetwidth_min": "text",
+                "streetwidth_max": "text",
+                "right_zipcode": "text",
+                "left_zipcode": "text",
+                "borocode": "integer",
+                "nodelevelf": "text",
+                "nodelevelt": "text",
+                "featuretyp": "text",
+                "trafdir": "text",
+                "number_total_lanes": "text",
+                "bikelane": "text",
+                "geom": "geometry(LineString,4326)"
+            }
+        }
+    ]
+}

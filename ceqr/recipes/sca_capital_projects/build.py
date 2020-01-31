@@ -114,8 +114,7 @@ if __name__ == "__main__":
 
     # perform column transformation
     df = df.rename(columns={'projectid': 'project_dsf', 
-                            'schoolname' : 'name', 
-                            'geom' : 'geometry'})
+                            'schoolname': 'name'})
 
     df['org_level'] = df['name'].apply(guess_org_level)
     df['capacity'] = df['forecastcapacity'].apply(get_capacity_number).fillna(0).astype(int)

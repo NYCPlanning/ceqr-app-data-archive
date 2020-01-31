@@ -2,9 +2,9 @@ from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter
 import pandas as pd
-import geopandas as gpd
 from pathlib import Path
 import numpy as np
+import geopandas as gpd
 import os
 
 if __name__ == "__main__":

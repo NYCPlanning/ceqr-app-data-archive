@@ -47,6 +47,6 @@ if __name__ == "__main__":
 
     # merge the journey to work census tract list with shapefile
     df_geo = pd.merge(geoid_df, ct_shp[['geoid','centroid']], on = 'geoid')
-    df_geo['centroid'] = df_geo['centroid'].apply(lambda x: loads(dumps(x)).wkt)
+    df_geo['geom'] = df_geo['centroid'].apply(lambda x: loads(dumps(x)).wkt)
     
-    exporter(df_geo, output_table, DDL=DDL, geo_column='centroid')
+    exporter(df_geo, output_table, DDL=DDL, geo_column='geom')

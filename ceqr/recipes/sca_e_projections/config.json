@@ -5,7 +5,7 @@
         ],
     "outputs": [
         {
-            "output_table" : "sca_e_projections.latest",
+            "output_table" : "sca_e_projections.\"2019\"",
             "DDL": {
                 "school_year": "integer",
                 "district": "integer",

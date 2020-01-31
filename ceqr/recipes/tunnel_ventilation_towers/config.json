@@ -1,0 +1,16 @@
+{
+    "inputs": [
+        "tunnel_ventilation_towers.latest"
+        ],
+    "outputs": [
+        {
+            "output_table" : "tunnel_ventilation_towers.latest",
+            "DDL": {
+                "name": "text",
+                "address": "text",
+                "link": "text",
+                "geom": "geometry(Point,4326)"
+            }
+        }
+    ]
+}
