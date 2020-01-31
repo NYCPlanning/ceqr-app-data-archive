@@ -6,14 +6,15 @@
 
 ## Data info: 
 * input:
-  * `doe_lcgms.\"2018\"` in RECIPE_ENGINE
-  * `sca_bluebook.\"2018\"` in RECIPE_ENGINE
-  * `doe_school_subdistricts.\"2018\"` in CEQR_ENGINE
+  * `doe_lcgms.latest` in RECIPE_ENGINE
+  * `sca_bluebook.latest` in RECIPE_ENGINE
+  * `dcp_boroboundaries_wi.latest` in RECIPE_ENGINE
+  * `doe_school_subdistricts.latest` in RECIPE_ENGINE
 * output: 
-  * `ceqr_school_buildings.\"2018\"` in EDM_DATA
+  * `ceqr_school_buildings.latest` in EDM_DATA
 * DDL: 
   ```sql
-  CREATE TABLE ceqr_school_buildings."2018" (
+  CREATE TABLE ceqr_school_buildings.latest (
     district integer,
     subdistrict integer,
     borocode integer,
