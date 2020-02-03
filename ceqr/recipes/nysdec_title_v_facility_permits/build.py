@@ -3,7 +3,6 @@ from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
 from ceqr.helper.exporter import exporter
 from multiprocessing import Pool, cpu_count
-import requests
 from urllib.request import Request, urlopen
 from bs4 import BeautifulSoup
 import ssl
