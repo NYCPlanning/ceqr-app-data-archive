@@ -33,7 +33,7 @@ if __name__ == "__main__":
                                                         .melt('district', var_name='school_year', value_name='hs')
 
     # Create boro field
-    b_to_d_dict = {1:list(range(1,7)), 2:list(range(7,13)) + 31, 3:list(range(13,24)), 4:list(range(24,31)), 5:31}
+    b_to_d_dict = {1:list(range(1,7)), 2:list(range(7,13)), 3:list(range(13,24)) + [32], 4:list(range(24,31)), 5:[31]}
     d_to_b_dict = dict((v1, k) for k, v in b_to_d_dict.items() for v1 in v)
     df_hs['borocode'] = df_hs['district'].astype(int).map(d_to_b_dict)
 
