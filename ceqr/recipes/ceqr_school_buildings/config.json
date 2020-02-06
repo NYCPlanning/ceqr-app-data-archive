@@ -1,8 +1,8 @@
 {
     "inputs": [
         "sca_bluebook.\"2019\"",
-        "doe_lcgms.\"2019\"",
-        "doe_school_subdistricts.\"2017\"",
+        "doe_lcgms.\"2019_new\"",
+        "doe_school_subdistricts.latest",
         "dcp_boroboundaries_wi.latest"
         ],
     "outputs": [

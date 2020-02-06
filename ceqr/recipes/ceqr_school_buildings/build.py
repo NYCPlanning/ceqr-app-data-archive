@@ -18,6 +18,10 @@ if __name__ == "__main__":
     DDL = config['outputs'][0]['DDL']
 
     # import data
+    # filter out Charter schools, Alternative high schools
+    # Adult learning center and adult continuing education
+    # Competitve highschools, City-wide G&T schools
+    # and Pre-K centers
     bluebook = gpd.GeoDataFrame.from_postgis(f'''
                                                 SELECT a.*, b.borocode, 'bluebook' AS source,\
                                                 ST_TRANSFORM(ST_SetSRID(ST_MakePoint(a.x::NUMERIC, a.y::NUMERIC),2263),4326) AS geom\
@@ -25,27 +29,36 @@ if __name__ == "__main__":
                                                 WHERE ST_Within(ST_TRANSFORM(ST_SetSRID(ST_MakePoint(a.x::NUMERIC, a.y::NUMERIC),2263),4326),\
                                                     b.wkb_geometry)\
                                                 AND a.org_id IS NOT NULL\
+                                                AND(a.org_level IS NOT NULL\
+                                                AND a.org_level != 'SPED'\
+                                                AND a.org_level != 'OTHER')\
+                                                AND a.charter IS NULL\
+                                                AND a.organization_name !~* 'ALC'\
+                                                AND a.organization_name !~* 'Alternative Learning'\
+                                                AND a.org_id NOT IN ('Q950','M973')\
+                                                AND a.organization_name !~* 'Adult'\
+                                                AND a.org_id NOT IN ('X445','K449','K430','M692','X696','Q687','R605','M475')\
+                                                AND a.org_id NOT IN ('M539', 'M334', 'K686', 'K682','Q300')\
+                                                AND a.organization_name !~* 'pre-k'\
                                                 ''', con=recipe_engine, geom_col='geom')
 
-    #load lcgms records, excluding outsideNYC and ones existing in bluebook already
+    # load lcgms records, excluding outsideNYC
+    # apply filter
     lcgms = gpd.GeoDataFrame.from_postgis(f'''SELECT a.*, b.borocode, c.district, c.subdistrict, 'lcgms' AS source,\
-                                                ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326) AS geom\
-                                                FROM {input_table_lcgms} a\
-                                                LEFT JOIN {input_table_boro} b\
-                                                ON ST_Within(ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326),\
-                                                    b.wkb_geometry)\
-                                                LEFT JOIN {input_table_subdistricts} c\
-                                                ON ST_Within(ST_SetSRID(ST_MakePoint(a.longitude::NUMERIC, a.latitude::NUMERIC),4326),\
-                                                    c.wkb_geometry)\
-                                                WHERE geographical_district_code !~* '00'\
-                                                AND building_code||location_code NOT IN (\
-                                                    SELECT DISTINCT bldg_id||org_id\
-                                                    FROM sca_bluebook."2019"\
-                                                    WHERE bldg_id||org_id IS NOT NULL)
+                                            ST_SetSRID(ST_MakePoint(REPLACE(a.longitude,'NULL', '0')::NUMERIC,\
+                                                REPLACE(a.latitude,'NULL', '0')::NUMERIC),4326) AS geom\
+                                            FROM {input_table_lcgms} a\
+                                            LEFT JOIN {input_table_boro} b\
+                                            ON ST_Within(ST_SetSRID(ST_MakePoint(REPLACE(a.longitude,'NULL', '0')::NUMERIC,\
+                                                REPLACE(a.latitude,'NULL', '0')::NUMERIC),4326), b.wkb_geometry)\
+                                            LEFT JOIN {input_table_subdistricts} c\
+                                            ON ST_Within(ST_SetSRID(ST_MakePoint(REPLACE(a.longitude,'NULL', '0')::NUMERIC,\
+                                                REPLACE(a.latitude,'NULL', '0')::NUMERIC),4326), c.wkb_geometry)\
+                                            WHERE system_code !~* '^75'
+                                            AND system_code !~* '^84'
+                                            AND building_code !~* ' AF '
+                                            AND building_code !~* ' GYM '
                                                 ''', con=recipe_engine, geom_col='geom')
-    
-    ## apply filter
-    # bluebook = bluebook[bluebook.org_level.isin(['PS','IS','HS','PSIS','ISHS'])]
 
     # perform column transformation for bluebook
     bluebook.rename(columns={'bldg_excl.': 'excluded', 'organization_name':'name'}, inplace = True)
@@ -66,9 +79,12 @@ if __name__ == "__main__":
 
     # rename the column names
     lcgms.rename(columns={'building_name':'bldg_name',
-                          'building_id_number_(bin)':'bldg_id',
+                          'building_code':'bldg_id',
                           'location_code':'org_id',
-                          'location_name':'name'}, inplace = True)
+                          'location_name':'name',
+                          'address_line_1': 'address'}, inplace = True)
+    # excluding sites in bluebook
+    lcgms = lcgms[~(lcgms.org_id+lcgms.bldg_id).isin(bluebook.org_id+bluebook.bldg_id)]
 
     # perform column transformation for lcgms
     lcgms['excluded'] = False
