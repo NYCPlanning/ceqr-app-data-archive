@@ -7,9 +7,9 @@
 ## Data info: 
 * input:
   * `sca_e_pct.latest` in RECIPE_ENGINE
-  * `sca_e_projections.latest` in RECIPE_ENGINE
+  * `sca_e_projections_by_sd.latest` in RECIPE_ENGINE
 * output: 
-  * `sca_e_projections.latest` in EDM_DATA
+  * `sca_e_projections_by_sd.latest` in EDM_DATA
 * DDL: 
   ```sql
     CREATE TABLE sca_e_projections."latest" (

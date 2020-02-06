@@ -6,12 +6,12 @@
 
 ## Data info: 
 * input:
-  * `sca_e_projections.2019` in RECIPE_ENGINE
+  * `sca_e_projections.latest` in RECIPE_ENGINE
 * output: 
   * `sca_e_projections_by_boro.latest` in EDM_DATA
 * DDL: 
   ```sql
-    CREATE TABLE sca_e_projections_by_boro."2019" (
+    CREATE TABLE sca_e_projections_by_boro."latest" (
       school_year integer,
       borocode integer,
       hs integer
