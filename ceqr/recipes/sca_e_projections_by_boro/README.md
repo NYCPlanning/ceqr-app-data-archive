@@ -12,8 +12,8 @@
 * DDL: 
   ```sql
     CREATE TABLE sca_e_projections_by_boro."2019" (
-    school_year integer,
-    borocode integer,
-    hs integer
+      school_year integer,
+      borocode integer,
+      hs integer
     );
   ```
