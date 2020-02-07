@@ -1,11 +1,11 @@
 {
     "inputs": [
-        "sca_e_pct.\"2019\"",
-        "sca_e_projections.\"2019\""
+        "sca_e_pct.\"2017\"",
+        "sca_e_projections.\"2017\""
         ],
     "outputs": [
         {
-            "output_table" : "sca_e_projections_by_sd.\"2019\"",
+            "output_table" : "sca_e_projections_by_sd.\"2017\"",
             "DDL": {
                 "school_year": "integer",
                 "district": "integer",

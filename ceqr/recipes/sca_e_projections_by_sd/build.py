@@ -7,6 +7,10 @@ import numpy as np
 import geopandas as gpd
 import os
 
+def get_level(x):
+    if x == 'PS': return 'ps'
+    if x == 'MS': return 'is'
+
 if __name__ == "__main__":
     # Load configuration
     config = load_config(Path(__file__).parent/'config.json')
@@ -18,36 +22,30 @@ if __name__ == "__main__":
     # import data
     pct = pd.read_sql(f'SELECT * FROM {input_table_pct}', con=recipe_engine)
     projections = pd.read_sql(f'SELECT * FROM {input_table_projections}', con=recipe_engine)
-    
-    # filter data to calculate projects by school level
-    target = ['PK','K','1','2','3','4','5','6','7','8']
-    ps_ = target[:7]
-    is_ = target[7:]
-    projections = projections[projections.projected.isin(target)].drop(columns=['ogc_fid'])
 
-    # change school_year field type to integer
-    for school_year in projections.columns[3:]:
-        projections[school_year] = projections[school_year].astype(int)
+    # convert level value into lowercase
+    # convert projections into a long list by level
+    pct['level'] = pct['level'].apply(lambda x: get_level(x))
+    pct.drop(columns=['ogc_fid'], inplace = True)
+    projections = projections.drop(columns=['ogc_fid'])\
+                             .melt(['district', 'school_year'], var_name='level', value_name='projections')
 
-    # reformat the table
-    df_ps = projections[projections.projected.isin(ps_)].drop(columns=['projected'])\
-                                                        .groupby('district')\
-                                                        .sum().reset_index()\
-                                                        .melt('district', var_name='school_year', value_name='ps')
-    df_is = projections[projections.projected.isin(is_)].drop(columns=['projected'])\
-                                                        .groupby('district')\
-                                                        .sum().reset_index()\
-                                                        .melt('district', var_name='school_year', value_name='is')
-    projections = pd.merge(df_ps, df_is, on =['district','school_year'])
+    # merge projections table with pct table
+    # calculate projections by subdistrict
+    df = pd.merge(projections, pct, how = 'inner', on = ['district', 'level'])
+    df['projections'] = df['projections'].astype('int')
+    df['multiplier'] = df['multiplier'].astype('float')
+    df['projections'] = df['projections'] * df['multiplier']
+    df['projections'] = df['projections'].astype('int')
 
-    # merge two tables and perform column transformation
-    df = pd.merge(pct, projections, how='outer', on=['district'])
-    df['multiplier'] = df.multiplier.apply(lambda x: float(x[:-1])/100).astype(float)
-    df['school_year'] = df.school_year.apply(lambda x: x[:4])
-    df['ps'] = df['ps'] * df.multiplier
-    df['is'] = df['is'] * df.multiplier
-    df['ps'] = df['ps'].astype(int)
-    df['is'] = df['is'].astype(int)
+    # pivot the df table by unstacking level
+    df = df.reset_index().drop(columns=['index','multiplier'])
+    df = df.set_index(['school_year', 'district','subdistrict', 'level'])\
+           .projections.unstack()\
+           .sort_values(by = ['district', 'subdistrict', 'school_year'])\
+           .reset_index()
+    # take the front year from the school_year
+    df['school_year'] = df.school_year.apply(lambda x: x[:4]).astype('int')
 
     # export table to EDM_DATA
     exporter(df=df, 
