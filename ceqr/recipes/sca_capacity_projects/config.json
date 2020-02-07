@@ -1,0 +1,22 @@
+{
+    "inputs": [
+        "sca_capacity_projects_prev.latest",
+        "sca_capacity_projects_current.latest"
+        ],
+    "outputs": [
+        {
+            "output_table" : "sca_capacity_projects.latest",
+            "DDL": {
+                "name": "text",
+                "org_level": "text",
+                "capacity": "bigint",
+                "pct_ps": "double precision",
+                "pct_is": "double precision",
+                "pct_hs": "double precision",
+                "guessed_pct": "boolean",
+                "est_opening": "date",
+                "geom": "geometry(Point,4326)"
+            }
+        }
+    ]
+}
