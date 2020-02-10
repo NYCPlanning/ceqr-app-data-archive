@@ -15,7 +15,7 @@
                 "pct_is": "double precision",
                 "pct_hs": "double precision",
                 "guessed_pct": "boolean",
-                "opening_date": "text",
+                "opening_date": "date",
                 "geom": "geometry(Point,4326)"
             }
         }

@@ -89,6 +89,31 @@ def geocode(inputs):
     geo.update(inputs)
     return geo
 
+def get_date(d): 
+    try:
+        d = datetime.datetime.strptime(d,'%B %Y')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
+        return str(d)
+    except:
+        pass
+    try:
+        d = datetime.datetime.strptime(d,'%b-%y')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
+        return str(d)
+    except:
+        pass
+    try:
+        d = datetime.datetime.strptime(d,'%y-%b')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
+        return str(d)
+    except:
+        pass
+    try:
+        d = datetime.datetime.strptime(d,'%Y-%m-%d %H:%M:%S0')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
+        return str(d)
+    except:
+        return ''
 
 def guess_org_level(name):
     '''
@@ -179,6 +204,7 @@ if __name__ == "__main__":
     df['sname'] = df.address.apply(get_sname).apply(lambda x: clean_street(x))
     df['org_level'] = df['name'].apply(guess_org_level)
     df['capacity'] = df['forecastcapacity'].fillna(0).astype(int)
+    df['opening_date'] = df['opening_date'].apply(get_date)
     df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
     df['pct_is'] = df['org_level'].apply(estimate_pct_is)
     df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)
