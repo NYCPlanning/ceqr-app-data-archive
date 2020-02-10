@@ -8,13 +8,14 @@
             "output_table" : "sca_capacity_projects.latest",
             "DDL": {
                 "name": "text",
+                "borough":"text",
                 "org_level": "text",
                 "capacity": "bigint",
                 "pct_ps": "double precision",
                 "pct_is": "double precision",
                 "pct_hs": "double precision",
                 "guessed_pct": "boolean",
-                "est_opening": "date",
+                "opening_date": "text",
                 "geom": "geometry(Point,4326)"
             }
         }

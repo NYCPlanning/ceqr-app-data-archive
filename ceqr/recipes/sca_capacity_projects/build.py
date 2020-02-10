@@ -1,6 +1,6 @@
 from ceqr.helper.engines import recipe_engine, edm_engine, ceqr_engine
 from ceqr.helper.config_loader import load_config
-from ceqr.helper.exporter import exporter_classic
+from ceqr.helper.exporter import exporter
 from ceqr.helper.geocode import get_hnum, get_sname, g, GeosupportError, create_geom, geo_parser
 from multiprocessing import Pool, cpu_count
 import datetime
@@ -11,64 +11,89 @@ import numpy as np
 import os
 import re
 
-def geocode(inputs):
-    hnum = inputs.get('hnum', '')
-    sname = inputs.get('sname', '')
-    borough = inputs.get('borough', '')
-
-    hnum = str('' if hnum is None else hnum)
-    sname = str('' if sname is None else sname)
-    borough = str('' if borough is None else borough)
-
-    try:
-        geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
-        geo = geo_parser(geo)
-        geo.update(dict(geo_function='1B'))
-    except GeosupportError:
-        try:
-            geo = g['1B'](street_name=sname, house_number=hnum, borough=borough, mode='tpad')
-            geo = geo_parser(geo)
-            geo.update(dict(geo_function='1B-tpad'))
-        except GeosupportError:
-            try:
-                geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
-                geo = geo_parser(geo)
-                geo.update(dict(geo_function='1B'))
-            except GeosupportError as e:
-                geo = e.result
-                geo = geo_parser(geo)
-                geo.update(dict(geo_function=''))
-
-    geo.update(inputs)
-    return geo
-
 
 def clean_house(s):
     s = ' ' if s == None else s
-    s = '' if s[0] == '0' else s
     s = re.sub(r"\([^)]*\)", "", s)\
         .replace(' - ', '-')\
+        .strip()\
         .split("(",maxsplit=1)[0]\
         .split("/",maxsplit=1)[0]
     return s
 
 def clean_street(s):
     s = '' if s == None else s
-    s = 'JFK INTERNATIONAL AIRPORT' if 'JFK' in s else s
     s = re.sub(r"\([^)]*\)", "", s)\
         .replace("'","")\
-        .replace("VARIOUS","")\
-        .replace("LOCATIONS","")\
         .split("(",maxsplit=1)[0]\
         .split("/",maxsplit=1)[0]
     return s
 
-def parse_streetname(x, n):
-    x = '' if x is None else x
-    if ('&' in x)|(' AND ' in x.upper())|('CROSS' in x.upper())|('CRS' in x.upper()):
-        x = re.split('&| AND | and |CROSS|CRS',x)[n]
-    else: x = ''
-    return x
+def find_stretch(address):
+    if 'BETWEEN' in address:
+        street_1 = address.split('BETWEEN')[0]
+        street_2 = address.split('BETWEEN')[1].split('AND')[0]
+        street_3 = address.split('BETWEEN')[1].split('AND')[1]
+        return street_1, street_2, street_3
+    else:
+        return '','',''
+    
+def find_intersection(address):
+    if 'AND' in address:
+        street_1 = address.split('AND')[0]
+        street_2 = address.split('AND')[1]
+        return street_1, street_2
+    else:
+        return '',''
+
+def geocode(inputs):
+    boroughs = {'M':'1', 'X':'2', 'K':'3', 'Q':'4', 'R':'5'}
+    hnum = inputs.get('hnum', '')
+    sname = inputs.get('sname', '')
+    borough = boroughs.get(inputs.get('borough', '').strip())
+
+    hnum = str('' if hnum is None else hnum)
+    # If hyphens aren't in Queens, take the first number
+    if borough != "4":
+        hnum = hnum.split('-')[0]
+    sname = str('' if sname is None else sname)
+    borough = str('' if borough is None else borough)
+  
+    try:
+        # First try to find the address using TPAD
+        geo = g['1B'](street_name=sname, house_number=hnum, borough=borough, mode='tpad')
+        geo = geo_parser(geo)
+        geo.update(dict(geo_function='1B-tpad'))
+    except GeosupportError:
+        print('\n\nNOT GEOCODED WITH 1B: ', inputs.get('address'), 'hnum: ', hnum, 'sname: ', sname, 'boro: ', borough)
+        # Try to parse original address as a stretch
+        try:
+            street_1, street_2, street_3 = find_stretch(inputs.get('address'))
+            print('Attempt at finding stretch inputs: ', street_1, street_2, street_3)
+            # Call to geosupport function 3
+            geo = g['3S'](borough_code=borough, street_name_1=street_1, street_name_2=street_2, \
+                                                street_name_3=street_3, mode='long+tpad')
+            geo = geo_parser(geo)
+            geo.update(dict(geo_function='3S-tpad'))
+            print('Success with 3S!')
+        except:
+            try:
+                # Try to parse original address as an intersection
+                street_1, street_2 = find_intersection(inputs.get('address'))
+                print('Attempt at finding intersection inputs: ', street_1, street_2)
+                # Call to geosupport function 2
+                geo = g['2'](street_name_1=street_1, street_name_2=street_2, borough_code=borough)
+                geo = geo_parser(geo)
+                geo.update(dict(geo_function='Intersection'))
+                print('Success with 2!')
+            except GeosupportError as e:
+                print('NOT GEOCODED WITH 2 or 3: ', inputs.get('address'))
+                geo = e.result
+                geo = geo_parser(geo)
+                geo.update(dict(geo_function=''))
+
+    geo.update(inputs)
+    return geo
 
 
 def guess_org_level(name):
@@ -126,27 +151,6 @@ def estimate_pct_hs(org_level):
     if org_level == 'HS': return 1
     else:
         return 0
-
-def get_date(d): 
-    try:
-        d = datetime.datetime.strptime(d,'%b-%y')\
-            .strftime('%Y-%m-%d %H:%M:%S+00')
-        return str(d)
-    except:
-        pass
-    try:
-        d = datetime.datetime.strptime(d,'%y-%b')\
-            .strftime('%Y-%m-%d %H:%M:%S+00')
-        return str(d)
-    except:
-        pass
-    try:
-        d = datetime.datetime.strptime(d,'%Y-%m-%d %H:%M:%S0')\
-            .strftime('%Y-%m-%d %H:%M:%S+00')
-        return str(d)
-    except:
-        return ''
-
   
 if __name__ == "__main__":
     # Load configuration (note: please use relative paths)
@@ -159,15 +163,15 @@ if __name__ == "__main__":
     # Import data and standardize column names
     df_15_19 = pd.read_sql(f'''
         select * from {input_table_15_19} 
-        ''', con=recipe_engine).rename(columns={'DISTRICT':'district', 'SCHOOL':'name','BOROUGH':'boro',\
-                                                                          'ADDRESS':'address','NUMBER OF SEATS':'forecastcapacity',\
-                                                                         'OPENING & ANTICIPATED OPENING ':'estopening'})
+        ''', con=recipe_engine).rename(columns={'school':'name',\
+                                                'number_of_seats':'forecastcapacity',\
+                                                'opening_&_anticipated_opening':'opening_date'})
 
     df_20_24 = pd.read_sql(f'''
         select * from {input_table_20_24} 
-        ''', con=recipe_engine).rename(columns={'DISTRICT':'district', 'SCHOOL':'name','BOROUGH':'boro',\
-                                                                          'LOCATION':'address','CAPACITY':'forecastcapacity',\
-                                                                         'ANTICIPATED OPENING':'estopening'})
+        ''', con=recipe_engine).rename(columns={'school':'name',\
+                                                'location':'address','capacity':'forecastcapacity',\
+                                                'anticipated_opening':'opening_date'})
 
     # Create flag capital project plan year
     df_15_19['cap_plan'] = '15-19'
@@ -177,14 +181,15 @@ if __name__ == "__main__":
     df = df_15_19.append(df_20_24, ignore_index=True)
 
     # Perform column transformation
-    df['hnum'] = df.address.apply(get_hnum)
-    df['sname'] = df.address.apply(get_sname)
+    df['hnum'] = df.address.apply(get_hnum).apply(lambda x: clean_house(x))
+    df['sname'] = df.address.apply(get_sname).apply(lambda x: clean_street(x))
     df['org_level'] = df['name'].apply(guess_org_level)
     df['capacity'] = df['forecastcapacity'].fillna(0).astype(int)
     df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
     df['pct_is'] = df['org_level'].apply(estimate_pct_is)
     df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)
     df['guessed_pct'] = df['org_level'].apply(lambda x: True if x == 'PSIS' else False)
+
 
     # Geocoding
     records = df.to_dict('records')
@@ -194,7 +199,8 @@ if __name__ == "__main__":
         it = pool.map(geocode, records, 10000)
     
     df = pd.DataFrame(it)
-    df = df[df['geo_grc'] != '71']
+    #df = df[df['geo_grc'].isin(['00','01'])]
+    #print(df[['geo_x_coord','geo_latitude','geo_longitude']])
     df['geo_address'] = None
     df['geo_longitude'] = pd.to_numeric(df['geo_longitude'], errors='coerce')
     df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
@@ -202,8 +208,14 @@ if __name__ == "__main__":
     df['geom'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
     df['geo_bbl'] = df.geo_bbl.apply(lambda x: None if (x == '0000000000')|(x == '') else x)
 
+    print('Percent of records geocoded: ', df.dropna(subset=['geo_bbl']).shape[0]/df.shape[0])
+
+    # Save geocoding errors to csv
+    df[df['geom'].isnull()].to_csv('capacity_proj_errors.csv')
+
     # Export table to EDM_DATA
     exporter(df=df, 
             output_table=output_table, 
-            con=edm_engine, 
+            con=edm_engine,
+            geo_column='geom', 
             DDL=DDL)
