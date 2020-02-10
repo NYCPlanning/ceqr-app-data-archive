@@ -65,29 +65,23 @@ def geocode(inputs):
         geo = geo_parser(geo)
         geo.update(dict(geo_function='1B-tpad'))
     except GeosupportError:
-        print('\n\nNOT GEOCODED WITH 1B: ', inputs.get('address'), 'hnum: ', hnum, 'sname: ', sname, 'boro: ', borough)
         # Try to parse original address as a stretch
         try:
             street_1, street_2, street_3 = find_stretch(inputs.get('address'))
-            print('Attempt at finding stretch inputs: ', street_1, street_2, street_3)
             # Call to geosupport function 3
             geo = g['3S'](borough_code=borough, street_name_1=street_1, street_name_2=street_2, \
                                                 street_name_3=street_3, mode='long+tpad')
             geo = geo_parser(geo)
             geo.update(dict(geo_function='3S-tpad'))
-            print('Success with 3S!')
         except:
             try:
                 # Try to parse original address as an intersection
                 street_1, street_2 = find_intersection(inputs.get('address'))
-                print('Attempt at finding intersection inputs: ', street_1, street_2)
                 # Call to geosupport function 2
                 geo = g['2'](street_name_1=street_1, street_name_2=street_2, borough_code=borough)
                 geo = geo_parser(geo)
                 geo.update(dict(geo_function='Intersection'))
-                print('Success with 2!')
             except GeosupportError as e:
-                print('NOT GEOCODED WITH 2 or 3: ', inputs.get('address'))
                 geo = e.result
                 geo = geo_parser(geo)
                 geo.update(dict(geo_function=''))
@@ -199,8 +193,6 @@ if __name__ == "__main__":
         it = pool.map(geocode, records, 10000)
     
     df = pd.DataFrame(it)
-    #df = df[df['geo_grc'].isin(['00','01'])]
-    #print(df[['geo_x_coord','geo_latitude','geo_longitude']])
     df['geo_address'] = None
     df['geo_longitude'] = pd.to_numeric(df['geo_longitude'], errors='coerce')
     df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
