@@ -20,7 +20,8 @@
       pct_is double precision,
       pct_hs double precision,
       guessed_pct boolean,
-      est_opening text,
+      opening_date date,
+      capital_plan text,
       geometry geometry(Point,4326)
   );
   ```

@@ -193,10 +193,10 @@ if __name__ == "__main__":
                                                 'anticipated_opening':'opening_date'})
 
     # Create flag capital project plan year
-    df_15_19['cap_plan'] = '15-19'
-    df_20_24['cap_plan'] = '20-24'
+    df_15_19['capital_plan'] = '15-19'
+    df_20_24['capital_plan'] = '20-24'
 
-    # Concatenate tables and flag which
+    # Concatenate tables
     df = df_15_19.append(df_20_24, ignore_index=True)
 
     # Perform column transformation

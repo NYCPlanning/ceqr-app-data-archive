@@ -16,6 +16,7 @@
                 "pct_hs": "double precision",
                 "guessed_pct": "boolean",
                 "opening_date": "date",
+                "capital_plan": "text",
                 "geom": "geometry(Point,4326)"
             }
         }
