@@ -20,8 +20,11 @@
       pct_is double precision,
       pct_hs double precision,
       guessed_pct boolean,
-      opening_date date,
+      start_date date,
       capital_plan text,
-      geometry geometry(Point,4326)
+      borough text,
+      address text,
+      geo_function text,
+      geom geometry
   );
   ```
