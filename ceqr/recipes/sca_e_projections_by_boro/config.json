@@ -6,7 +6,7 @@
         {
             "output_table" : "sca_e_projections_by_boro.\"2019\"",
             "DDL": {
-                "school_year": "integer",
+                "year": "integer",
                 "borough": "character varying",
                 "hs": "integer"
             }

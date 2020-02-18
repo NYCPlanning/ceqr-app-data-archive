@@ -43,7 +43,7 @@ if __name__ == "__main__":
 
     # Sum enrollment over boro
     df_boro = df_hs.groupby(['borough','school_year'], as_index=False).sum()
-    df_boro['school_year'] = df_boro['school_year'].str[0:4]
+    df_boro['year'] = df_boro['school_year'].str[0:4]
 
     # Export table to EDM_DATA
     exporter(df=df_boro, 
