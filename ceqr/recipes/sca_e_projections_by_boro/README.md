@@ -13,7 +13,7 @@
   ```sql
     CREATE TABLE sca_e_projections_by_boro."latest" (
       school_year integer,
-      borocode integer,
+      borough character varying,
       hs integer
     );
   ```
