@@ -5,4 +5,5 @@
 *__pycache__/*
 *.DS_Store
 !ceqr/recipes/doe_significant_utilization_changes/output/sharepoint_urls.csv
+!ceqr/recipes/sca_capacity_projects/output/capacity_projects_needgeoms.csv
 **/base

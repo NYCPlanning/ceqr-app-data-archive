@@ -31,31 +31,27 @@ def clean_street(s):
 
 def find_stretch(address):
     if 'BETWEEN' in address:
-        street_1 = address.split('BETWEEN')[0]
-        street_2 = address.split('BETWEEN')[1].split('AND')[0]
-        street_3 = address.split('BETWEEN')[1].split('AND')[1]
+        street_1 = address.split('BETWEEN')[0].strip()
+        street_2 = (address.split('BETWEEN')[1].split('AND')[0] + address.split(' ')[-1]).strip()
+        street_3 = address.split('BETWEEN')[1].split('AND')[1].strip()
         return street_1, street_2, street_3
     else:
         return '','',''
     
 def find_intersection(address):
     if 'AND' in address:
-        street_1 = address.split('AND')[0]
-        street_2 = address.split('AND')[1]
+        street_1 = address.split('AND')[0].strip()
+        street_2 = address.split('AND')[1].strip()
         return street_1, street_2
     else:
         return '',''
 
 def geocode(inputs):
-    boroughs = {'M':'1', 'X':'2', 'K':'3', 'Q':'4', 'R':'5'}
     hnum = inputs.get('hnum', '')
     sname = inputs.get('sname', '')
-    borough = boroughs.get(inputs.get('borough', '').strip())
+    borough = inputs.get('borough', '')
 
     hnum = str('' if hnum is None else hnum)
-    # If hyphens aren't in Queens, take the first number
-    if borough != "4":
-        hnum = hnum.split('-')[0]
     sname = str('' if sname is None else sname)
     borough = str('' if borough is None else borough)
   
@@ -68,19 +64,33 @@ def geocode(inputs):
         # Try to parse original address as a stretch
         try:
             street_1, street_2, street_3 = find_stretch(inputs.get('address'))
-            # Call to geosupport function 3
-            geo = g['3S'](borough_code=borough, street_name_1=street_1, street_name_2=street_2, \
-                                                street_name_3=street_3, mode='long+tpad')
-            geo = geo_parser(geo)
-            geo.update(dict(geo_function='3S-tpad'))
+            if (street_1 != '')&(street_2 != '')&(street_3 != ''):
+                # Call to geosupport function 3
+                geo = g['3'](street_name_1=street_1, street_name_2=street_2, street_name_3=street_3, borough_code=borough)
+                geo_from_node = geo.get('From Node', '')
+                geo_to_node = geo.get('To Node', '')
+                geo_from_x_coord = g['2'](node=geo_from_node).get('SPATIAL COORDINATES', {}).get('X Coordinate', '')
+                geo_from_y_coord = g['2'](node=geo_from_node).get('SPATIAL COORDINATES', {}).get('Y Coordinate', '')
+                geo_to_x_coord = g['2'](node=geo_to_node).get('SPATIAL COORDINATES', {}).get('X Coordinate', '')
+                geo_to_y_coord = g['2'](node=geo_to_node).get('SPATIAL COORDINATES', {}).get('Y Coordinate', '')
+                geo.update(dict(geo_from_x_coord=geo_from_x_coord, geo_from_y_coord=geo_from_y_coord, geo_to_x_coord=geo_to_x_coord, geo_to_y_coord=geo_to_y_coord,geo_function='Segment'))
+            else:
+                geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
+                geo = geo_parser(geo)
+                geo.update(dict(geo_function='1B'))
         except:
             try:
                 # Try to parse original address as an intersection
                 street_1, street_2 = find_intersection(inputs.get('address'))
-                # Call to geosupport function 2
-                geo = g['2'](street_name_1=street_1, street_name_2=street_2, borough_code=borough)
-                geo = geo_parser(geo)
-                geo.update(dict(geo_function='Intersection'))
+                if (street_1 != '')&(street_2 != ''):
+                    # Call to geosupport function 2
+                    geo = g['2'](street_name_1=street_1, street_name_2=street_2, borough_code=borough)
+                    geo = geo_parser(geo)
+                    geo.update(dict(geo_function='Intersection'))
+                else:
+                    geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
+                    geo = geo_parser(geo)
+                    geo.update(dict(geo_function='1B'))
             except GeosupportError as e:
                 geo = e.result
                 geo = geo_parser(geo)
@@ -170,6 +180,16 @@ def estimate_pct_hs(org_level):
     if org_level == 'HS': return 1
     else:
         return 0
+
+def get_boro(b):
+    BORO = dict(
+        M = 'Manhattan',
+        X = 'Bronx',
+        K = 'Brooklyn',
+        Q = 'Queens',
+        R = 'Staten Island',
+    )
+    return BORO.get(b.strip(), '')
   
 if __name__ == "__main__":
     # Load configuration (note: please use relative paths)
@@ -177,6 +197,7 @@ if __name__ == "__main__":
     input_table_15_19 = config['inputs'][0] 
     input_table_20_24 = config['inputs'][1]
     output_table = config['outputs'][0]['output_table']
+    output_table_schema = config['outputs'][0]['output_table'].split('.')[0]
     DDL = config['outputs'][0]['DDL']
 
     # Import data and standardize column names
@@ -184,13 +205,13 @@ if __name__ == "__main__":
         select * from {input_table_15_19} 
         ''', con=recipe_engine).rename(columns={'school':'name',\
                                                 'number_of_seats':'forecastcapacity',\
-                                                'opening_&_anticipated_opening':'opening_date'})
+                                                'opening_&_anticipated_opening':'start_date'})
 
     df_20_24 = pd.read_sql(f'''
         select * from {input_table_20_24} 
         ''', con=recipe_engine).rename(columns={'school':'name',\
                                                 'location':'address','capacity':'forecastcapacity',\
-                                                'anticipated_opening':'opening_date'})
+                                                'anticipated_opening':'start_date'})
 
     # Create flag capital project plan year
     df_15_19['capital_plan'] = '15-19'
@@ -200,16 +221,16 @@ if __name__ == "__main__":
     df = df_15_19.append(df_20_24, ignore_index=True)
 
     # Perform column transformation
+    df['borough'] = df['borough'].apply(get_boro)
     df['hnum'] = df.address.apply(get_hnum).apply(lambda x: clean_house(x))
     df['sname'] = df.address.apply(get_sname).apply(lambda x: clean_street(x))
     df['org_level'] = df['name'].apply(guess_org_level)
     df['capacity'] = df['forecastcapacity'].fillna(0).astype(int)
-    df['opening_date'] = df['opening_date'].apply(get_date)
+    df['start_date'] = df['start_date'].apply(get_date)
     df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
     df['pct_is'] = df['org_level'].apply(estimate_pct_is)
     df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)
     df['guessed_pct'] = df['org_level'].apply(lambda x: True if x == 'PSIS' else False)
-
 
     # Geocoding
     records = df.to_dict('records')
@@ -224,16 +245,64 @@ if __name__ == "__main__":
     df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
     df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.geo_longitude, df.geo_latitude))
     df['geom'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
-    df['geo_bbl'] = df.geo_bbl.apply(lambda x: None if (x == '0000000000')|(x == '') else x)
 
-    print('Percent of records geocoded: ', df.dropna(subset=['geo_bbl']).shape[0]/df.shape[0])
+    geo_rejects = df[(df['geom'].isnull())&(df['geo_x_coord'] == '')&(df['geo_from_x_coord'].isnull())]
 
-    # Save geocoding errors to csv
-    df[df['geom'].isnull()].to_csv('capacity_proj_errors.csv')
+    print('Percent of records geocoded: ', (len(df)-len(geo_rejects))/len(df))
+
+    ###################### finalizing ####################
+    SQL = f'''
+        ALTER TABLE {output_table}
+        ADD geo_from_geom GEOMETRY,
+        ADD geo_to_geom GEOMETRY;
+        UPDATE {output_table}
+        SET geo_from_geom = ST_TRANSFORM(ST_SetSRID(ST_MakePoint(geo_from_x_coord::NUMERIC,
+                                                                 geo_from_y_coord::NUMERIC),2263),4326),
+            geo_to_geom = ST_TRANSFORM(ST_SetSRID(ST_MakePoint(geo_to_x_coord::NUMERIC,
+                                                               geo_to_y_coord::NUMERIC),2263),4326)
+        WHERE geo_function = 'Segment';
+
+        UPDATE {output_table} SET geom = (CASE
+                                            WHEN geo_function = 'Intersection'
+                                                THEN ST_TRANSFORM(ST_SetSRID(ST_MakePoint(geo_x_coord,geo_y_coord),2263),4326)
+                                            WHEN geo_function = 'Segment'
+                                                THEN ST_MakeLine(geo_from_geom, geo_to_geom)
+                                            ELSE geom
+                                        END);
+
+        ALTER TABLE {output_table}
+        DROP COLUMN geo_x_coord,
+        DROP COLUMN geo_y_coord,
+        DROP COLUMN geo_from_x_coord,
+        DROP COLUMN geo_from_y_coord,
+        DROP COLUMN geo_to_x_coord,
+        DROP COLUMN geo_to_y_coord,
+        DROP COLUMN geo_from_geom,
+        DROP COLUMN geo_to_geom;
+
+        DROP TABLE IF EXISTS {output_table_schema}.geo_rejects;
+        SELECT * INTO {output_table_schema}.geo_rejects
+        FROM {output_table}
+        WHERE geom IS NULL;
+
+        DELETE FROM {output_table}
+        WHERE geom IS NULL;
+
+        ALTER TABLE {output_table}
+        DROP COLUMN geo_grc,
+        DROP COLUMN geo_grc2,
+        DROP COLUMN geo_reason_code,
+        DROP COLUMN geo_message;
+        '''
 
     # Export table to EDM_DATA
     exporter(df=df, 
             output_table=output_table, 
             con=edm_engine,
             geo_column='geom', 
-            DDL=DDL)
+            DDL=DDL,
+            sql=SQL)
+
+    # Save geocoding errors to csv
+    geo_rejects = pd.read_sql(f'''SELECT * FROM {output_table_schema}.geo_rejects ''', con=edm_engine)
+    geo_rejects.to_csv('output/capacity_projects_needgeoms.csv')

@@ -8,16 +8,28 @@
             "output_table" : "sca_capacity_projects.latest",
             "DDL": {
                 "name": "text",
-                "borough":"text",
                 "org_level": "text",
                 "capacity": "bigint",
                 "pct_ps": "double precision",
                 "pct_is": "double precision",
                 "pct_hs": "double precision",
                 "guessed_pct": "boolean",
-                "opening_date": "date",
+                "start_date": "date",
                 "capital_plan": "text",
-                "geom": "geometry(Point,4326)"
+                "borough":"text",
+                "address": "text",
+                "geo_x_coord": "double precision",
+                "geo_y_coord": "double precision",
+                "geo_from_x_coord": "double precision",
+                "geo_from_y_coord": "double precision",
+                "geo_to_x_coord": "double precision",
+                "geo_to_y_coord": "double precision",
+                "geo_function": "text",
+                "geom": "geometry",
+                "geo_grc": "text",
+                "geo_grc2": "text",
+                "geo_reason_code": "text",
+                "geo_message": "text"
             }
         }
     ]
