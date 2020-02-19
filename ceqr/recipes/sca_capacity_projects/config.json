@@ -18,6 +18,7 @@
                 "capital_plan": "text",
                 "borough":"text",
                 "address": "text",
+                "geo_xy_coord" : "text",
                 "geo_x_coord": "double precision",
                 "geo_y_coord": "double precision",
                 "geo_from_x_coord": "double precision",

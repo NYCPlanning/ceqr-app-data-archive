@@ -56,10 +56,10 @@ def geocode(inputs):
     borough = str('' if borough is None else borough)
   
     try:
-        # First try to find the address using TPAD
-        geo = g['1B'](street_name=sname, house_number=hnum, borough=borough, mode='tpad')
+        # First try to geocode using 1B
+        geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
         geo = geo_parser(geo)
-        geo.update(dict(geo_function='1B-tpad'))
+        geo.update(geo_function='1B')
     except GeosupportError:
         # Try to parse original address as a stretch
         try:
@@ -73,7 +73,7 @@ def geocode(inputs):
                 geo_from_y_coord = g['2'](node=geo_from_node).get('SPATIAL COORDINATES', {}).get('Y Coordinate', '')
                 geo_to_x_coord = g['2'](node=geo_to_node).get('SPATIAL COORDINATES', {}).get('X Coordinate', '')
                 geo_to_y_coord = g['2'](node=geo_to_node).get('SPATIAL COORDINATES', {}).get('Y Coordinate', '')
-                geo.update(dict(geo_from_x_coord=geo_from_x_coord, geo_from_y_coord=geo_from_y_coord, geo_to_x_coord=geo_to_x_coord, geo_to_y_coord=geo_to_y_coord,geo_function='Segment'))
+                geo.update(dict(geo_from_x_coord=geo_from_x_coord, geo_from_y_coord=geo_from_y_coord, geo_to_x_coord=geo_to_x_coord, geo_to_y_coord=geo_to_y_coord, geo_function='Segment'))
             else:
                 geo = g['1B'](street_name=sname, house_number=hnum, borough=borough)
                 geo = geo_parser(geo)
@@ -232,7 +232,7 @@ if __name__ == "__main__":
     df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)
     df['guessed_pct'] = df['org_level'].apply(lambda x: True if x == 'PSIS' else False)
 
-    # Geocoding
+    # Geocoding 1B, intersection, segment
     records = df.to_dict('records')
 
     # Multiprocess
@@ -240,15 +240,15 @@ if __name__ == "__main__":
         it = pool.map(geocode, records, 10000)
     
     df = pd.DataFrame(it)
-    df['geo_address'] = None
+
     df['geo_longitude'] = pd.to_numeric(df['geo_longitude'], errors='coerce')
     df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
     df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.geo_longitude, df.geo_latitude))
     df['geom'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
 
-    geo_rejects = df[(df['geom'].isnull())&(df['geo_x_coord'] == '')&(df['geo_from_x_coord'].isnull())]
-
+    geo_rejects = df[(df['geom'].isnull())&(df['geo_x_coord']=='')&(df['geo_from_x_coord'].isnull())&(df['geo_xy_coord']=='')]
     print('Percent of records geocoded: ', (len(df)-len(geo_rejects))/len(df))
+
 
     ###################### finalizing ####################
     SQL = f'''
@@ -263,14 +263,18 @@ if __name__ == "__main__":
         WHERE geo_function = 'Segment';
 
         UPDATE {output_table} SET geom = (CASE
+                                            WHEN geo_function = '1B' AND geom IS NULL AND geo_xy_coord IS NOT NULL
+                                                THEN ST_TRANSFORM(ST_SetSRID(ST_MakePoint(LEFT(geo_xy_coord, 7)::DOUBLE PRECISION,\
+                                                                                          RIGHT(geo_xy_coord, 7)::DOUBLE PRECISION),2263),4326)
                                             WHEN geo_function = 'Intersection'
                                                 THEN ST_TRANSFORM(ST_SetSRID(ST_MakePoint(geo_x_coord,geo_y_coord),2263),4326)
                                             WHEN geo_function = 'Segment'
-                                                THEN ST_MakeLine(geo_from_geom, geo_to_geom)
+                                                THEN ST_centroid(ST_MakeLine(geo_from_geom, geo_to_geom))
                                             ELSE geom
                                         END);
 
         ALTER TABLE {output_table}
+        DROP COLUMN geo_xy_coord,
         DROP COLUMN geo_x_coord,
         DROP COLUMN geo_y_coord,
         DROP COLUMN geo_from_x_coord,

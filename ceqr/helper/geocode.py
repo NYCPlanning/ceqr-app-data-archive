@@ -38,6 +38,7 @@ def geo_parser(geo):
         geo_bin = geo.get('Building Identification Number (BIN) of Input Address or NAP', ''),
         geo_latitude = geo.get('Latitude', ''),
         geo_longitude = geo.get('Longitude', ''),
+        geo_xy_coord = geo.get('Spatial X-Y Coordinates of Address'),
         geo_x_coord = geo.get('SPATIAL COORDINATES', {}).get('X Coordinate', ''),
         geo_y_coord = geo.get('SPATIAL COORDINATES', {}).get('Y Coordinate', ''),
         geo_grc = geo.get('Geosupport Return Code (GRC)', ''),
