@@ -263,15 +263,19 @@ if __name__ == "__main__":
         WHERE geo_function = 'Segment';
 
         UPDATE {output_table} SET geom = (CASE
-                                            WHEN geo_function = '1B' AND geom IS NULL AND geo_xy_coord IS NOT NULL
-                                                THEN ST_TRANSFORM(ST_SetSRID(ST_MakePoint(LEFT(geo_xy_coord, 7)::DOUBLE PRECISION,\
-                                                                                          RIGHT(geo_xy_coord, 7)::DOUBLE PRECISION),2263),4326)
                                             WHEN geo_function = 'Intersection'
                                                 THEN ST_TRANSFORM(ST_SetSRID(ST_MakePoint(geo_x_coord,geo_y_coord),2263),4326)
                                             WHEN geo_function = 'Segment'
                                                 THEN ST_centroid(ST_MakeLine(geo_from_geom, geo_to_geom))
                                             ELSE geom
                                         END);
+
+        UPDATE {output_table} SET geo_function = '1E',
+                                  geom = ST_TRANSFORM(ST_SetSRID(ST_MakePoint(LEFT(geo_xy_coord, 7)::DOUBLE PRECISION,\
+                                                                              RIGHT(geo_xy_coord, 7)::DOUBLE PRECISION),2263),4326)
+        WHERE geo_function = '1B'\
+        AND geom IS NULL\
+        AND geo_xy_coord IS NOT NULL;
 
         ALTER TABLE {output_table}
         DROP COLUMN geo_xy_coord,
@@ -308,5 +312,5 @@ if __name__ == "__main__":
             sql=SQL)
 
     # Save geocoding errors to csv
-    geo_rejects = pd.read_sql(f'''SELECT * FROM {output_table_schema}.geo_rejects ''', con=edm_engine)
+    geo_rejects = pd.read_sql(f'''SELECT * FROM {output_table_schema}.geo_rejects''', con=edm_engine)
     geo_rejects.to_csv('output/capacity_projects_needgeoms.csv')
