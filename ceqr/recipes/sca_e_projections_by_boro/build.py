@@ -23,7 +23,7 @@ if __name__ == "__main__":
     projections = projections[projections.projected.isin(hs_)].drop(columns=['ogc_fid'])
 
     # Change school_year field type to integer
-    for school_year in projections.columns[3:]:
+    for school_year in projections.columns[2:]:
         projections[school_year] = projections[school_year].str.replace(",","").astype(int)
 
     # Reformat the table by melting and groupint by district

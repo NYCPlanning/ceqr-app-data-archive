@@ -16,7 +16,7 @@ if __name__ == "__main__":
     DDL = config['outputs'][0]['DDL']
 
     # import data
-    pct = pd.read_sql(f'SELECT * FROM {input_table_pct}', con=recipe_engine)
+    pct = pd.read_sql(f'SELECT district, subdistrict, level, multiplier FROM {input_table_pct}', con=recipe_engine)
     projections = pd.read_sql(f'SELECT * FROM {input_table_projections}', con=recipe_engine)
     
     # filter data to calculate projects by school level
@@ -26,10 +26,10 @@ if __name__ == "__main__":
     projections = projections[projections.projected.isin(target)].drop(columns=['ogc_fid'])
 
     # change school_year field type to integer
-    for school_year in projections.columns[3:]:
+    for school_year in projections.columns[2:]:
         projections[school_year] = projections[school_year].astype(int)
 
-    # reformat the table
+    # reformat the projections table
     df_ps = projections[projections.projected.isin(ps_)].drop(columns=['projected'])\
                                                         .groupby('district')\
                                                         .sum().reset_index()\
@@ -38,16 +38,23 @@ if __name__ == "__main__":
                                                         .groupby('district')\
                                                         .sum().reset_index()\
                                                         .melt('district', var_name='school_year', value_name='is')
+
     projections = pd.merge(df_ps, df_is, on =['district','school_year'])
 
+    # reformat the subdistrict percentage table
+    pct['multiplier'] = pct.multiplier.apply(lambda x: float(x[:-1])/100).astype(float)
+    pct = pct.groupby(['district', 'subdistrict', 'level'])\
+             .multiplier.sum().unstack(fill_value=0).reset_index()\
+             .rename(columns={'MS':'is_multiplier', 'PS':'ps_multiplier'})
+
     # merge two tables and perform column transformation
-    df = pd.merge(pct, projections, how='outer', on=['district'])
-    df['multiplier'] = df.multiplier.apply(lambda x: float(x[:-1])/100).astype(float)
+    df = pd.merge(pct, projections, how='outer', on=['district'])\
+           .sort_values(by=['district','subdistrict'])
     df['school_year'] = df.school_year.apply(lambda x: x[:4])
-    df['ps'] = df['ps'] * df.multiplier
-    df['is'] = df['is'] * df.multiplier
-    df['ps'] = df['ps'].astype(int)
-    df['is'] = df['is'].astype(int)
+    df['ps'] = df['ps'] * df.ps_multiplier
+    df['is'] = df['is'] * df.is_multiplier
+    df['ps'] = round(df['ps'], 0).astype(int)
+    df['is'] = round(df['is'], 0).astype(int)
 
     # export table to EDM_DATA
     exporter(df=df, 
