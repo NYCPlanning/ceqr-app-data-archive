@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import geopandas as gpd
 import os
+import math
 
 if __name__ == "__main__":
     # Load configuration
@@ -53,8 +54,8 @@ if __name__ == "__main__":
     df['school_year'] = df.school_year.apply(lambda x: x[:4])
     df['ps'] = df['ps'] * df.ps_multiplier
     df['is'] = df['is'] * df.is_multiplier
-    df['ps'] = round(df['ps'], 0).astype(int)
-    df['is'] = round(df['is'], 0).astype(int)
+    df['ps'] = df['ps'].apply(lambda x: math.ceil(x)).astype(int)
+    df['is'] = df['is'].apply(lambda x: math.ceil(x)).astype(int)
 
     # export table to EDM_DATA
     exporter(df=df, 
