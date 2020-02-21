@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import geopandas as gpd
 import os
+import math
 
 def get_level(x):
     if x == 'PS': return 'ps'
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     df['projections'] = df['projections'].astype('int')
     df['multiplier'] = df['multiplier'].astype('float')
     df['projections'] = df['projections'] * df['multiplier']
-    df['projections'] = df['projections'].astype('int')
+    df['projections'] = df['projections'].apply(lambda x: math.ceil(x)).astype('int')
 
     # pivot the df table by unstacking level
     df = df.reset_index().drop(columns=['index','multiplier'])
