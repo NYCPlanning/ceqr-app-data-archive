@@ -1,9 +1,13 @@
-name: CEQR run ~~
+name: CEQR Runner
 on: [push]
 jobs:
   build:
     if: "! contains(github.event.head_commit.message, '[skip ci]')"
     runs-on: ubuntu-latest
+    env:
+      RECIPE_ENGINE: ${{ secrets.RECIPE_ENGINE }}
+      EDM_DATA: ${{ secrets.EDM_DATA }}
+      CEQR_DATA: ${{ secrets.CEQR_DATA }}
     steps:
     - uses: actions/checkout@v2
     - name: Set up Python 3.8
