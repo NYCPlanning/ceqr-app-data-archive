@@ -1,7 +1,7 @@
 ## CEQR App Data User Guides
 This repository includes ETL pipelines for all the datasets fed into CEQR (City Environmental Quality Review) app. It is managed by NYC Planning's data engineering team.
 
-## Building Instructions
+#### Building Instructions
 1. Set environmental variables: `RECIPE_ENGINE`, `CEQR_DATA`, and `EDM_DATA` under the `/ceqr` directory. See `.env.example`.
 2. Run `python3 -m venv base` to set up the virtual environment.
 3. Run `source base/bin/activate` to activate the virtual environment. To deactivate once finished, type `deactivate`.
