@@ -43,7 +43,7 @@ if __name__ == "__main__":
     projections = pd.merge(df_ps, df_is, on =['district','school_year'])
 
     # reformat the subdistrict percentage table
-    pct['multiplier'] = pct.multiplier.apply(lambda x: float(x[:-1])/100).astype(float)
+    pct['multiplier'] = pct.multiplier.astype(float)
     pct = pct.groupby(['district', 'subdistrict', 'level'])\
              .multiplier.sum().unstack(fill_value=0).reset_index()\
              .rename(columns={'MS':'is_multiplier', 'PS':'ps_multiplier'})
