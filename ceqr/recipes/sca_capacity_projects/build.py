@@ -220,6 +220,11 @@ if __name__ == "__main__":
     # Concatenate tables
     df = df_15_19.append(df_20_24, ignore_index=True)
 
+    # Import csv to replace invalid addresses with manual corrections
+    cor_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_address_cor.csv').to_dict('records')
+    for record in cor_dict:
+        df.loc[df['name']==record['school'],'address'] = record['address'].upper()
+
     # Perform column transformation
     df['borough'] = df['borough'].apply(get_boro)
     df['hnum'] = df.address.apply(get_hnum).apply(lambda x: clean_house(x))

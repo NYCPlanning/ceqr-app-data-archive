@@ -1,4 +1,1 @@
 ,name,org_level,capacity,pct_ps,pct_is,pct_hs,guessed_pct,start_date,capital_plan,borough,address,geo_function,geom,geo_grc,geo_grc2,geo_reason_code,geo_message
-0,P.S. @ HUDSON SQUARE,PS,462,1.0,0.0,0.0,False,2025-06-01,20-24,Manhattan,2 HUDSON SQUARE,,,42,42,,ADDRESS NUMBER OUT OF RANGE
-1,I.S. @ 21-31 & 35 DELEVAN STREET,IS,646,0.0,1.0,0.0,False,2025-06-01,20-24,Brooklyn,21-31 & 35 DELEVAN STREET,,,13,13,C,ADDRESS NBR 21-31 35  HAS AN EMBEDDED BLANK.
-2,I.S. @ 44-59 45 AVENUE,IS,536,0.0,1.0,0.0,False,2024-06-01,20-24,Queens,44-59 45 AVENUE,,,42,42,,ADDRESS NUMBER OUT OF RANGE
