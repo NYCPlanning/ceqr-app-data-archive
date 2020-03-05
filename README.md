@@ -17,7 +17,6 @@ This repository includes ETL pipelines for all the datasets fed into CEQR (City 
    - `README.md` The metadata about the ETL pipeline
    - `requirements` The required dependencies need to install to run the python script
    - `runner.sh` A shell script, by executing which, you can build a dataset from scratch. or you can execute `ceqr run <schema_name>` at root directory
- 3. Output tables are in EDM_DATA under schemas named by the datasets.
 ```
 ├── ceqr
 │   ├── recipes
@@ -41,3 +40,4 @@ This repository includes ETL pipelines for all the datasets fed into CEQR (City 
 2. Create `config.json`, `README.md`, `build.py`, `requirements.txt` and `runner.sh` as described in the **Repo directory structure** within this new folder
    - For the `output table schema`, besides the requirements specified by the data users, it also need to follow the [CEQR data schema standards](https://docs.google.com/spreadsheets/d/1Z41fgiU_mi1KltlS783kUZpPcC8Sn7hUxTqhaNxQFg8/edit?usp=sharing).
 2. Follow the **Building Instructions** to test the ETL pipeline
+3. Output table can be found in EDM_DATA under a schema named by the dataset.
