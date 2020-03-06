@@ -340,7 +340,7 @@ if __name__ == "__main__":
             sql=get_sql(output_table_all, output_table_schema_all))
 
     # Remove special ed cases
-    df_filtered = df[df['district']!='75']
+    df_filtered = df[(df['district']!='75')&(df.org_level!='PK')&(df.org_level!='3K')]
 
     # Export filtered table to EDM_DATA
     exporter(df=df_filtered, 
