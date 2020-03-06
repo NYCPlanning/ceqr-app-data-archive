@@ -330,7 +330,3 @@ if __name__ == "__main__":
             geo_column='geom', 
             DDL=DDL,
             sql=SQL)
-
-    # Save geocoding errors to csv
-    geo_rejects = pd.read_sql(f'''SELECT * FROM {output_table_schema}.geo_rejects''', con=edm_engine)
-    geo_rejects.to_csv('output/capacity_projects_needgeoms.csv')
