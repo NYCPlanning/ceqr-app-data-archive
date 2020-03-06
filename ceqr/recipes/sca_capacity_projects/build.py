@@ -143,6 +143,7 @@ def guess_org_level(name):
         if 'M.S.' in name: return 'IS'
         if 'H.S.' in name: return 'HS'
         if 'HIGH SCHOOL' in name: return 'HS'
+        if 'D75' in name: return 'SE'
     except:
         pass
     try: # PS, IS, HS will be identified
@@ -196,81 +197,8 @@ def get_boro(b):
         R = 'Staten Island',
     )
     return BORO.get(b.strip(), '')
-  
-if __name__ == "__main__":
-    # Load configuration (note: please use relative paths)
-    config = load_config(Path(__file__).parent/'config.json')
-    input_table_15_19 = config['inputs'][0] 
-    input_table_20_24 = config['inputs'][1]
-    output_table = config['outputs'][0]['output_table']
-    output_table_schema = config['outputs'][0]['output_table'].split('.')[0]
-    DDL = config['outputs'][0]['DDL']
 
-    # Import data and standardize column names
-    df_15_19 = pd.read_sql(f'''
-        select * from {input_table_15_19} 
-        ''', con=recipe_engine).rename(columns={'school':'name',\
-                                                'number_of_seats':'forecastcapacity',\
-                                                'opening_&_anticipated_opening':'start_date'})
-
-    df_20_24 = pd.read_sql(f'''
-        select * from {input_table_20_24} 
-        ''', con=recipe_engine).rename(columns={'school':'name',\
-                                                'location':'address','capacity':'forecastcapacity',\
-                                                'anticipated_opening':'start_date'})
-
-    # Create flag capital project plan year
-    df_15_19['capital_plan'] = '15-19'
-    df_20_24['capital_plan'] = '20-24'
-
-    # Concatenate tables
-    df = df_15_19.append(df_20_24, ignore_index=True)
-
-    # Remove special ed cases
-    df = df[~df.name.str.contains("D75")]
-
-    # Import csv to replace invalid addresses with manual corrections
-    cor_add_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_address_cor.csv').to_dict('records')
-    for record in cor_add_dict:
-        df.loc[df['name']==record['school'],'address'] = record['address'].upper()
-
-    # Perform column transformation
-    df['borough'] = df['borough'].apply(get_boro)
-    df['hnum'] = df.address.apply(get_hnum).apply(lambda x: clean_house(x))
-    df['sname'] = df.address.apply(get_sname).apply(lambda x: clean_street(x))
-    df['org_level'] = df['name'].apply(guess_org_level)
-
-    # Import csv to replace org_levels with manual corrections
-    cor_org_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_org_level_cor.csv').to_dict('records')
-    for record in cor_org_dict:
-        df.loc[df['name']==record['school'],'org_level'] = record['org_level']
-
-    df['capacity'] = df['forecastcapacity'].fillna(0).astype(int)
-    df['start_date'] = df['start_date'].apply(get_date)
-    df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
-    df['pct_is'] = df['org_level'].apply(estimate_pct_is)
-    df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)
-    df['guessed_pct'] = df['org_level'].apply(lambda x: True if len(x) > 2 else False)
-
-    # Geocoding 1B, intersection, segment
-    records = df.to_dict('records')
-
-    # Multiprocess
-    with Pool(processes=cpu_count()) as pool:
-        it = pool.map(geocode, records, 10000)
-    
-    df = pd.DataFrame(it)
-
-    df['geo_longitude'] = pd.to_numeric(df['geo_longitude'], errors='coerce')
-    df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
-    df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.geo_longitude, df.geo_latitude))
-    df['geom'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
-
-    geo_rejects = df[(df['geom'].isnull())&(df['geo_x_coord']=='')&(df['geo_from_x_coord'].isnull())&(df['geo_xy_coord']=='')]
-    print('Percent of records geocoded: ', (len(df)-len(geo_rejects))/len(df))
-
-
-    ###################### finalizing ####################
+def get_sql(output_table, output_table_schema):
     SQL = f'''
         ALTER TABLE {output_table}
         ADD geo_from_geom GEOMETRY,
@@ -322,11 +250,102 @@ if __name__ == "__main__":
         DROP COLUMN geo_reason_code,
         DROP COLUMN geo_message;
         '''
+    return SQL
+  
+if __name__ == "__main__":
+    # Load configuration (note: please use relative paths)
+    config = load_config(Path(__file__).parent/'config.json')
+    input_table_15_19 = config['inputs'][0] 
+    input_table_20_24 = config['inputs'][1]
 
-    # Export table to EDM_DATA
+    # Primary output table
+    output_table = config['outputs'][0]['output_table']
+    output_table_schema = config['outputs'][0]['output_table'].split('.')[0]
+    DDL = config['outputs'][0]['DDL']
+
+    # Unfiltered output table
+    output_table_all = config['outputs'][1]['output_table']
+    output_table_schema_all = config['outputs'][1]['output_table'].split('.')[0]
+    DDL_all = config['outputs'][1]['DDL']
+
+    # Import data and standardize column names
+    df_15_19 = pd.read_sql(f'''
+        select * from {input_table_15_19} 
+        ''', con=recipe_engine).rename(columns={'school':'name',\
+                                                'number_of_seats':'forecastcapacity',\
+                                                'opening_&_anticipated_opening':'start_date'})
+
+    df_20_24 = pd.read_sql(f'''
+        select * from {input_table_20_24} 
+        ''', con=recipe_engine).rename(columns={'school':'name',\
+                                                'location':'address','capacity':'forecastcapacity',\
+                                                'anticipated_opening':'start_date'})
+
+    # Create flag capital project plan year
+    df_15_19['capital_plan'] = '15-19'
+    df_20_24['capital_plan'] = '20-24'
+
+    # Concatenate tables
+    df = df_15_19.append(df_20_24, ignore_index=True)
+
+    # Import csv to replace invalid addresses with manual corrections
+    cor_add_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_address_cor.csv').to_dict('records')
+    for record in cor_add_dict:
+        df.loc[df['name']==record['school'],'address'] = record['address'].upper()
+
+    # Perform column transformation
+    df['borough'] = df['borough'].apply(get_boro)
+    df['hnum'] = df.address.apply(get_hnum).apply(lambda x: clean_house(x))
+    df['sname'] = df.address.apply(get_sname).apply(lambda x: clean_street(x))
+    df['org_level'] = df['name'].apply(guess_org_level)
+
+    # Import csv to replace org_levels with manual corrections
+    cor_org_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_org_level_cor.csv').to_dict('records')
+    for record in cor_org_dict:
+        df.loc[df['name']==record['school'],'org_level'] = record['org_level']
+
+    df['capacity'] = df['forecastcapacity'].fillna(0).astype(int)
+    df['start_date'] = df['start_date'].apply(get_date)
+    df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
+    df['pct_is'] = df['org_level'].apply(estimate_pct_is)
+    df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)
+    df['guessed_pct'] = df['org_level'].apply(lambda x: True if len(x) > 2 else False)
+
+    # Set special education org level to Null
+    df.loc[df['org_level'] == 'SE','org_level'] = np.nan
+
+    # Geocoding 1B, intersection, segment
+    records = df.to_dict('records')
+
+    # Multiprocess
+    with Pool(processes=cpu_count()) as pool:
+        it = pool.map(geocode, records, 10000)
+    
+    df = pd.DataFrame(it)
+
+    df['geo_longitude'] = pd.to_numeric(df['geo_longitude'], errors='coerce')
+    df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
+    df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.geo_longitude, df.geo_latitude))
+    df['geom'] = df['geometry'].apply(lambda x: None if np.isnan(x.xy[0]) else str(x))
+
+    geo_rejects = df[(df['geom'].isnull())&(df['geo_x_coord']=='')&(df['geo_from_x_coord'].isnull())&(df['geo_xy_coord']=='')]
+    print('Percent of records geocoded: ', (len(df)-len(geo_rejects))/len(df))
+
+    # Export unfiltered table to EDM_DATA
     exporter(df=df, 
+            output_table=output_table_all, 
+            con=edm_engine,
+            geo_column='geom', 
+            DDL=DDL,
+            sql=get_sql(output_table_all, output_table_schema_all))
+
+    # Remove special ed cases
+    df_filtered = df[(df['district']!='75')&(df.org_level!='PK')&(df.org_level!='3K')]
+
+    # Export filtered table to EDM_DATA
+    exporter(df=df_filtered, 
             output_table=output_table, 
             con=edm_engine,
             geo_column='geom', 
             DDL=DDL,
-            sql=SQL)
+            sql=get_sql(output_table, output_table_schema))
