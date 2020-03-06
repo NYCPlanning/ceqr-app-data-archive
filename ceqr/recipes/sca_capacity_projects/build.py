@@ -135,7 +135,9 @@ def guess_org_level(name):
     try: # P.S, M.S, H.S etc will be identified
         if '3K' in name: return '3K'
         if 'PRE-K' in name: return "PK"
-        if 'P.S./I.S.' in name: return 'PSIS'
+        if 'P.S./I.S.' in name.replace(" ", ""): return 'PSIS'
+        if 'I.S./H.S.' in name.replace(" ", ""): return 'ISHS'
+        if 'P.S./H.S.' in name.replace(" ", ""): return 'PSHS'
         if 'P.S.' in name: return 'PS'
         if 'I.S.' in name: return 'IS'
         if 'M.S.' in name: return 'IS'
@@ -167,17 +169,21 @@ def estimate_pct_ps(org_level):
     '''
     if org_level == 'PS': return 1
     elif org_level == 'PSIS': return 0.5
+    elif org_level == 'PSHS': return 0.5
     else:
         return 0
 
 def estimate_pct_is(org_level):
     if org_level == 'IS': return 1
     elif org_level == 'PSIS': return 0.5
+    elif org_level == 'ISHS': return 0.5
     else:
         return 0
 
 def estimate_pct_hs(org_level):
     if org_level == 'HS': return 1
+    elif org_level == 'PSHS': return 0.5
+    elif org_level == 'ISHS': return 0.5
     else:
         return 0
 
@@ -220,9 +226,12 @@ if __name__ == "__main__":
     # Concatenate tables
     df = df_15_19.append(df_20_24, ignore_index=True)
 
+    # Remove special ed cases
+    df = df[~df.name.str.contains("D75")]
+
     # Import csv to replace invalid addresses with manual corrections
-    cor_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_address_cor.csv').to_dict('records')
-    for record in cor_dict:
+    cor_add_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_address_cor.csv').to_dict('records')
+    for record in cor_add_dict:
         df.loc[df['name']==record['school'],'address'] = record['address'].upper()
 
     # Perform column transformation
@@ -230,12 +239,18 @@ if __name__ == "__main__":
     df['hnum'] = df.address.apply(get_hnum).apply(lambda x: clean_house(x))
     df['sname'] = df.address.apply(get_sname).apply(lambda x: clean_street(x))
     df['org_level'] = df['name'].apply(guess_org_level)
+
+    # Import csv to replace org_levels with manual corrections
+    cor_org_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_org_level_cor.csv').to_dict('records')
+    for record in cor_org_dict:
+        df.loc[df['name']==record['school'],'org_level'] = record['org_level']
+
     df['capacity'] = df['forecastcapacity'].fillna(0).astype(int)
     df['start_date'] = df['start_date'].apply(get_date)
     df['pct_ps'] = df['org_level'].apply(estimate_pct_ps)
     df['pct_is'] = df['org_level'].apply(estimate_pct_is)
     df['pct_hs'] = df['org_level'].apply(estimate_pct_hs)
-    df['guessed_pct'] = df['org_level'].apply(lambda x: True if x == 'PSIS' else False)
+    df['guessed_pct'] = df['org_level'].apply(lambda x: True if len(x) > 2 else False)
 
     # Geocoding 1B, intersection, segment
     records = df.to_dict('records')
