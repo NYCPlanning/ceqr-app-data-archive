@@ -1,15 +1,12 @@
 # ceqr-school-buildings
 
 ## Instructions: 
-1. install dependencies `pip3 install -r requirements.txt`
-2. build and publish table `python3 build.py`
+1. Run `runner` in the current directory to build the dataset
 
 ## Data info: 
 * input:
   * `doe_lcgms.latest` in RECIPE_ENGINE
   * `sca_bluebook.latest` in RECIPE_ENGINE
-  * `dcp_boroboundaries_wi.latest` in RECIPE_ENGINE
-  * `doe_school_subdistricts.latest` in RECIPE_ENGINE
 * output: 
   * `ceqr_school_buildings.latest` in EDM_DATA
 * DDL: 
@@ -31,7 +28,6 @@
     ie integer,
     hc integer,
     he integer,
-    source text,
     geom geometry(Point,4326)
   );
 

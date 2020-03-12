@@ -1,9 +1,7 @@
 {
     "inputs": [
         "sca_bluebook.\"2019\"",
-        "doe_lcgms.\"2019_new\"",
-        "doe_school_subdistricts.latest",
-        "dcp_boroboundaries_wi.latest"
+        "doe_lcgms.\"2019_new\""
         ],
     "outputs": [
         {
@@ -25,7 +23,6 @@
                 "ie": "integer",
                 "hc": "integer",
                 "he": "integer",
-                "source": "text",
                 "geom": "geometry(Point,4326)"
             }
         }
