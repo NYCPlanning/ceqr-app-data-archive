@@ -1,7 +1,7 @@
 # ceqr-school-buildings
 
 ## Instructions: 
-1. Run `runner` in the current directory to build the dataset
+1. Run `sh runner.sh` in the current directory to build the dataset
 
 ## Data info: 
 * input:
