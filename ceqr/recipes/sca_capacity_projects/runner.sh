@@ -1,9 +1,12 @@
 REPOLOC="$(git rev-parse --show-toplevel)"
 START=$(date +%s);
 
-docker run -it --rm\
+docker run --rm\
             -v $REPOLOC:/home/ceqr-app-data\
             -w /home/ceqr-app-data/\
+            -e RECIPE_ENGINE=$RECIPE_ENGINE\
+            -e EDM_DATA=$EDM_DATA\
+            -e CEQR_DATA=$CEQR_DATA\
             sptkl/docker-geosupport:latest bash -c "
             pip install -e .
             cd ceqr/recipes/sca_capacity_projects && {
