@@ -4,7 +4,7 @@ START=$(date +%s);
 docker run -it --rm\
             -v $REPOLOC:/home/ceqr-app-data\
             -w /home/ceqr-app-data/\
-            sptkl/docker-geosupport:19d bash -c "
+            sptkl/docker-geosupport:latest bash -c "
             pip install -e .
             cd ceqr/recipes/sca_capacity_projects && {
                 pip install -r requirements.txt

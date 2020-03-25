@@ -7,6 +7,7 @@
         {
             "output_table" : "sca_capacity_projects.latest",
             "DDL": {
+                "uid":"text",
                 "name": "text",
                 "org_level": "text",
                 "district": "text",
@@ -37,6 +38,7 @@
         {
             "output_table" : "sca_all_capacity_projects.latest",
             "DDL": {
+                "uid":"text",
                 "name": "text",
                 "org_level": "text",
                 "district": "text",

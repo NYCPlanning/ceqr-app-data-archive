@@ -7,6 +7,7 @@ import datetime
 import pandas as pd
 import geopandas as gpd
 from pathlib import Path
+import hashlib
 import numpy as np
 import os
 import re
@@ -322,7 +323,7 @@ if __name__ == "__main__":
         it = pool.map(geocode, records, 10000)
     
     df = pd.DataFrame(it)
-
+    df['uid'] = df.apply(lambda x: hashlib.md5(x.to_string().encode()).hexdigest(), axis=1)
     df['geo_longitude'] = pd.to_numeric(df['geo_longitude'], errors='coerce')
     df['geo_latitude'] = pd.to_numeric(df['geo_latitude'], errors='coerce')
     df = gpd.GeoDataFrame(df, geometry=gpd.points_from_xy(df.geo_longitude, df.geo_latitude))
