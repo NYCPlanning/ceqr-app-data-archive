@@ -8,6 +8,7 @@
 * input:
   * `sca_capacity_projects_prev.latest` in RECIPE_ENGINE
   * `sca_capacity_projects_current.latest` in RECIPE_ENGINE
+  * `sca_capacity_projects_tcu.latest` in RECIPE_ENGINE
 * output: 
   * `sca_capacity_projects.latest` in EDM_DATA
 * DDL: 
