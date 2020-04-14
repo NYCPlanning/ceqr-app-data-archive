@@ -1,7 +1,8 @@
 {
     "inputs": [
         "sca_capacity_projects_prev.latest",
-        "sca_capacity_projects_current.latest"
+        "sca_capacity_projects_current.latest",
+        "sca_capacity_projects_tcu.latest"
         ],
     "outputs": [
         {
