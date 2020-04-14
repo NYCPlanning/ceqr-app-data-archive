@@ -286,7 +286,7 @@ if __name__ == "__main__":
     df_tcu = pd.read_sql(f'''
         select * from {input_table_tcu} 
         ''', con=recipe_engine).rename(columns={'school':'name',\
-                                                'location':'address','capacity':'forecastcapacity',\
+                                                'location':'address','capaity':'forecastcapacity',\
                                                 'anticipated_opening':'start_date'})
 
     # Create flag capital project plan year
