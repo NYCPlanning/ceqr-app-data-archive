@@ -6,7 +6,7 @@
         ],
     "outputs": [
         {
-            "output_table" : "sca_capacity_projects.latest",
+            "output_table" : "sca_capacity_projects.\"02/2020\"",
             "DDL": {
                 "uid":"text",
                 "name": "text",
