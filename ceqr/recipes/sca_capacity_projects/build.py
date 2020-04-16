@@ -100,7 +100,13 @@ def geocode(inputs):
     geo.update(inputs)
     return geo
 
-def get_date(d): 
+def get_date(d):
+    try:
+        d = datetime.datetime.strptime(d,'%Y')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
+        return str(d)
+    except:
+        pass 
     try:
         d = datetime.datetime.strptime(d,'%B %Y')\
             .strftime('%Y-%m-%d %H:%M:%S+00')
