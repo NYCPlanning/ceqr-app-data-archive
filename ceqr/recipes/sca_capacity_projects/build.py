@@ -12,7 +12,6 @@ import numpy as np
 import os
 import re
 
-
 def clean_house(s):
     s = ' ' if s == None else s
     s = re.sub(r"\([^)]*\)", "", s)\
