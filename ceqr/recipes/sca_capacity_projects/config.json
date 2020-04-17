@@ -1,11 +1,12 @@
 {
     "inputs": [
         "sca_capacity_projects_prev.latest",
-        "sca_capacity_projects_current.latest"
+        "sca_capacity_projects_current.latest",
+        "sca_capacity_projects_tcu.latest"
         ],
     "outputs": [
         {
-            "output_table" : "sca_capacity_projects.latest",
+            "output_table" : "sca_capacity_projects.\"2020/02\"",
             "DDL": {
                 "uid":"text",
                 "name": "text",

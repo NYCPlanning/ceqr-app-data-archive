@@ -12,7 +12,6 @@ import numpy as np
 import os
 import re
 
-
 def clean_house(s):
     s = ' ' if s == None else s
     s = re.sub(r"\([^)]*\)", "", s)\
@@ -100,7 +99,13 @@ def geocode(inputs):
     geo.update(inputs)
     return geo
 
-def get_date(d): 
+def get_date(d):
+    try:
+        d = datetime.datetime.strptime(d,'%Y')\
+            .strftime('%Y-%m-%d %H:%M:%S+00')
+        return str(d)
+    except:
+        pass 
     try:
         d = datetime.datetime.strptime(d,'%B %Y')\
             .strftime('%Y-%m-%d %H:%M:%S+00')
@@ -258,6 +263,7 @@ if __name__ == "__main__":
     config = load_config(Path(__file__).parent/'config.json')
     input_table_15_19 = config['inputs'][0] 
     input_table_20_24 = config['inputs'][1]
+    input_table_tcu = config['inputs'][2]
 
     # Primary output table
     output_table = config['outputs'][0]['output_table']
@@ -282,12 +288,19 @@ if __name__ == "__main__":
                                                 'location':'address','capacity':'forecastcapacity',\
                                                 'anticipated_opening':'start_date'})
 
+    df_tcu = pd.read_sql(f'''
+        select * from {input_table_tcu} 
+        ''', con=recipe_engine).rename(columns={'school':'name',\
+                                                'location':'address','capacity':'forecastcapacity',\
+                                                'anticipated_opening':'start_date'})
+
     # Create flag capital project plan year
     df_15_19['capital_plan'] = '15-19'
     df_20_24['capital_plan'] = '20-24'
+    df_tcu['capital_plan'] = '20-24'
 
     # Concatenate tables
-    df = df_15_19.append(df_20_24, ignore_index=True)
+    df = df_15_19.append(df_20_24, ignore_index=True).append(df_tcu, ignore_index=True)
 
     # Import csv to replace invalid addresses with manual corrections
     cor_add_dict = pd.read_csv('https://raw.githubusercontent.com/NYCPlanning/ceqr-app-data/master/ceqr/data/sca_capacity_address_cor.csv').to_dict('records')
