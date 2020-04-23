@@ -1,4 +1,4 @@
-## CEQR App Data User Guides ![CEQR Runner](https://github.com/NYCPlanning/ceqr-app-data/workflows/CEQR%20Runner/badge.svg)
+## CEQR App Data User Guides ![CI](https://github.com/NYCPlanning/ceqr-app-data/workflows/CEQR%20Runner/badge.svg)
 This repository includes ETL pipelines for all the datasets fed into CEQR (City Environmental Quality Review) app. It is managed by NYC Planning's data engineering team.
 
 #### Building Instructions
