@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>CEQR APP DATA</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+  <meta name="description" content="Description">
+  <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:description" content="CEQR APP DATA">
+  <link rel="icon" href="assets/favicon.ico" type="image/x-icon" />
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="//unpkg.com/docsify/lib/themes/vue.css">
+  <link rel="stylesheet" href="assets/styles.css" />
+  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.css">
+  <script src="//cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body>
+  <div id="app">Please wait...</div>
+  <script>
+    window.$docsify = {
+      name: 'CEQR APP DATA',
+      logo: 'https://raw.githubusercontent.com/NYCPlanning/dcp-logo/master/dcp_logo_772.png',
+      homepage: 'home.md',
+      auto2top: true,
+      executeScript: true,
+      loadSidebar: true,
+      maxLevel: 3,  
+      subMaxLevel: 3,
+      plugins: [
+        function (hook, vm) {
+          hook.beforeEach(function (html) {
+            if (/githubusercontent\.com/.test(vm.route.file)) {
+              url = vm.route.file
+                .replace('raw.githubusercontent.com', 'github.com')
+                .replace(/\/master/, '/blob/master')
+            } else {
+              url = 'https://github.com/NYCPlanning/ceqr-app-data/blob/master/docs' + vm.route.file
+            }
+            var editHtml = '[📝 Edit Document](' + url + ')\n'
+
+            if (vm.route.path === '/') {
+              return html
+            } else if (vm.route.path === '/products') {
+              return html
+            } else {
+              return editHtml + html
+            }
+          })
+        },
+        function(hook) {
+          var footer = [
+            '<hr/>',
+            '<footer>',
+            '<span style="padding:5px;"><a href="https://twitter.com/NYCPlanning"><i class="fab fa-twitter-square fa-lg"></i></a></span>',
+            '<span style="padding:5px;"><a href="https://github.com/nycplanning"><i class="fab fa-github-square fa-lg"></i></a></span>',
+            '<span style="padding:5px;"><a href="https://medium.com/nyc-planning-digital"><i class="fab fa-medium fa-lg"></i></a></span>',
+            '</footer>'
+          ].join('');
+
+          hook.afterEach(function(html) {
+            return html + footer;
+          });
+        }
+      ],
+      search: {
+        maxAge: 86400000,
+        paths: 'auto',
+        placeholder: 'Type to search',
+        noData: 'No Results!',
+        depth: 6,
+        hideOtherSidebarContent: true,
+      },
+      markdown: {
+        renderer: {
+          code: function(code, lang) {
+            if (lang === "mermaid") {
+              return (
+                '<div class="mermaid">' + mermaid.render('mermaid-svg-' + num++, code) + "</div>"
+              );
+            }
+            return this.origin.code.apply(this, arguments);
+          }
+        }
+      },
+      remoteMarkdown: {
+        tag: 'remoteMarkdownUrl',
+      }
+    }
+
+    var num = 0;
+    mermaid.initialize({ logLevel:0, startOnLoad: false, themeCSS:'.label { font-family: Source Sans Pro,Helvetica Neue,Arial,sans-serif; }' });
+
+  </script>
+  <script src="//unpkg.com/docsify/lib/docsify.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/emoji.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/external-script.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs/components/prism-bash.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs/components/prism-python.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs/components/prism-sql.min.js"></script>
+  <script src="//unpkg.com/docsify-remote-markdown/dist/docsify-remote-markdown.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+  <script src="https://use.fontawesome.com/releases/v5.13.0/js/all.js" data-auto-a11y="true"></script>
+  <script>
+    ((window.gitter = {}).chat = {}).options = {
+      room: 'NYCPlanning/community',
+    };
+  </script>
+  <script src="https://sidecar.gitter.im/dist/sidecar.v1.js" async defer></script>
+</body>
+</html>
