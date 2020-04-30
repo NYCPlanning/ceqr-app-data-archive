@@ -22,11 +22,10 @@
       name: 'CEQR APP DATA',
       logo: 'https://raw.githubusercontent.com/NYCPlanning/dcp-logo/master/dcp_logo_772.png',
       homepage: 'home.md',
-      auto2top: true,
       executeScript: true,
       loadSidebar: true,
       maxLevel: 3,  
-      subMaxLevel: 3,
+      subMaxLevel: 1,
       plugins: [
         function (hook, vm) {
           hook.beforeEach(function (html) {
@@ -35,7 +34,7 @@
                 .replace('raw.githubusercontent.com', 'github.com')
                 .replace(/\/master/, '/blob/master')
             } else {
-              url = 'https://github.com/NYCPlanning/ceqr-app-data/blob/master/docs' + vm.route.file
+              url = 'https://github.com/NYCPlanning/ceqr-app-data/blob/master/ceqr/' + vm.route.file
             }
             var editHtml = '[📝 Edit Document](' + url + ')\n'
 
@@ -98,11 +97,7 @@
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/external-script.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify-copy-code"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs/components/prism-bash.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs/components/prism-python.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/prismjs/components/prism-sql.min.js"></script>
   <script src="//unpkg.com/docsify-remote-markdown/dist/docsify-remote-markdown.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
   <script src="https://use.fontawesome.com/releases/v5.13.0/js/all.js" data-auto-a11y="true"></script>
   <script>
     ((window.gitter = {}).chat = {}).options = {
