@@ -97,15 +97,13 @@ if __name__ == "__main__":
 
     # import data, apply EARD filter
     df = pd.read_sql(f'''SELECT * FROM {input_table}
-                            WHERE TRIM(status) != 'CANCELLED'
-                            AND LEFT(applicationid, 1) != 'G'
-                            AND (LEFT(applicationid, 1) != 'C'
-                                OR (requesttype != 'REGISTRATION'
-                                    AND requesttype != 'REGISTRATION INSPECTION'
-                                    AND requesttype != 'BOILER REGISTRATION II'))
-                            AND (LEFT(applicationid, 2) != 'CA'
-                                OR requesttype != 'WORK PERMIT'
-                                OR TRIM(status) != 'EXPIRED');''', con=recipe_engine)
+                        WHERE TRIM(status) != 'CANCELLED'
+                        AND LEFT(applicationid, 1) != 'G'
+                        AND LEFT(applicationid, 1) != 'C'
+                        AND NOT (LEFT(applicationid, 1) = 'P'
+                            AND (requesttype = 'REGISTRATION'
+                            OR requesttype = 'REGISTRATION INSPECTION'
+                            OR requesttype = 'BOILER REGISTRATION II'));''', con=recipe_engine)
     df.rename(columns={"house": "housenum", "street": "streetname",
                        "issuedate": "issue_date", "expirationdate": 'expiration_date'}, inplace=True)
     df['borough'] = df.borough.apply(lambda x: clean_boro(x))
