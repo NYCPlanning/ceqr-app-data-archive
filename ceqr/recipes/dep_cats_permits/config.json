@@ -23,9 +23,6 @@
                 "premisename": "text",
                 "housenum": "text", 
                 "streetname": "text",
-                "address": "text",
-                "streetname_1": "text",
-                "streetname_2": "text",
                 "borough": "text",
                 "geo_housenum": "text",
                 "geo_streetname": "text",
@@ -34,9 +31,6 @@
                 "geo_bin": "text",
                 "geo_latitude": "double precision",
                 "geo_longitude": "double precision",
-                "geo_x_coord": "double precision",
-                "geo_y_coord": "double precision",
-                "geo_function": "text",
                 "geom": "geometry(Point,4326)"
             }
         },
