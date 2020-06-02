@@ -154,13 +154,6 @@ if __name__ == "__main__":
             DELETE FROM {output_table}
             WHERE geom IS NULL;
 
-            ALTER TABLE {output_table}
-            DROP COLUMN address,
-            DROP COLUMN streetname_1,
-            DROP COLUMN streetname_2,
-            DROP COLUMN geo_x_coord,
-            DROP COLUMN geo_y_coord,
-            DROP COLUMN geo_function;
             '''
 
     SQL2 = f'''
