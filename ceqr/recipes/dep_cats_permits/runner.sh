@@ -1,7 +1,7 @@
 REPOLOC="$(git rev-parse --show-toplevel)"
 START=$(date +%s);
 
-docker run -it --rm\
+docker run --rm\
             -v $REPOLOC:/home/ceqr-app-data\
             -w /home/ceqr-app-data/\
             sptkl/docker-geosupport:19d bash -c "
